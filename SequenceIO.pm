@@ -12,15 +12,75 @@ package SequenceIO;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(loadCoordinates loadExonsBed loadGenomeFasta parseHeader saveReadGroup);
+@EXPORT = qw(loadCoordinates loadExonsBed loadGenomeFasta parseHeader saveReadGroup extractCoords extractCoordsDB);
 
 use strict;
 use warnings;
 use FindBin qw($Bin);
 use lib $Bin; # add $Bin directory to @INC
 use Utils;
+use HashesIO;
 
 my $bamtools = "$Bin/bamtools-2.3.0/bin/bamtools";
+
+## extract coordinates from file
+#####################################################
+sub extractCoords {
+
+	my $in = $_[0];
+	my $out = $_[1];
+	
+	print STDERR "Extract coordinates of candidates...";
+	
+	open IN, "< $in" or die "Can't open $in ($!)\n";
+	open OUT, "> $out" or die "Can't open $out ($!)\n";
+	
+	while (<IN>) {
+		chomp;
+		next if ($_ =~ /^#/); # skip comments
+		
+		my @A = split /\t/, $_;
+		print OUT "$A[0]\t$A[1]\n"; 
+	}
+	
+	close IN;
+	close OUT;
+}
+
+## extract coordinates from DB
+#####################################################
+sub extractCoordsDB {
+	
+	my $dbfile = $_[0];
+	my $bedfile = $_[1];
+	my $intarget = $_[2];
+	my $out = $_[3];
+	
+	my %exons;
+	my %variants;
+	
+	print STDERR "Extract coordinates of candidates...";
+	
+	
+	loadExonsBed("$bedfile", \%exons, 0, 0);
+	loadDB("$dbfile", \%variants, \%exons, $intarget);
+	
+	open OUT, "> $out" or die "Can't open $out ($!)\n";
+
+	foreach my $key (keys %variants) {
+		my $mut = $variants{$key};
+
+		next if($mut->{type} eq "snp");
+				
+		my $chr = $mut->{chr};
+		my $pos = $mut->{pos};		
+		
+		print OUT "$chr\t$pos\n"; 
+	}
+	
+	close OUT;
+}
+
 
 ## load selected location (coordinates)
 #####################################################

@@ -168,7 +168,7 @@ sub printParams {
 	print PFILE "-- window-size size (bp): $windowSize\n";
 	print PFILE "-- step size (bp): $delta\n";
 	print PFILE "-- minimum mapping quality: $map_qual\n";
-	print PFILE "-- minimum coverage for mutation: $min_cov\n";
+	print PFILE "-- minimum coverage for exporting mutation: $min_cov\n";
 	print PFILE "-- minimum coverage ratio for sequencing errors: $covratio\n";
 	print PFILE "-- minimum coverage ratio for exporting mutation: $outratio\n";
 	print PFILE "-- max number of mismatches for near-perfect repeats: $maxmismatch\n";

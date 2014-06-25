@@ -272,6 +272,7 @@ sub callSVs {
 			"--bed $BEDFILE ".
 			"--ref $REF ".
 			"--kmer $kmer ". 
+			"--mincov $min_cov ".
 			"--covthr $cov_threshold ". 
 			"--lowcov $tip_cov_threshold ".
 			"--covratio $covratio ".

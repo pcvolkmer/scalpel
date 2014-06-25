@@ -19,6 +19,7 @@ use POSIX;
 use FindBin qw($Bin);
 use lib $Bin; # add $Bin directory to @INC
 use Usage;
+use SequenceIO;
 use Utils qw(:DEFAULT $findVariants $findDenovos $findSomatic $exportTool $bamtools);
 
 use Utils;
@@ -64,6 +65,8 @@ my $sample = $defaults->{sample};
 my $selected = $defaults->{selected};
 my $dfs_limit = $defaults->{pathlimit};
 my $outformat = $defaults->{format};
+my $SVtype  = $defaults->{SVtype};
+
 
 # output parameters
 my $intarget;
@@ -266,11 +269,15 @@ sub init()
 				runCmd("FindDenovos", $command_main);
 			
 				# extract coordinates of candidate mutation
-				my $infile = "";
-				if ($outformat eq "annovar") { $infile = "$DIR_main/denovo.${min_cov}x.indel.annovar"; }
-				elsif ($outformat eq "vcf") { $infile  = "$DIR_main/denovo.${min_cov}x.indel.vcf"; }				
+				#my $infile = "";
+				#if ($outformat eq "annovar") { $infile = "$DIR_main/denovo.${min_cov}x.indel.annovar"; }
+				#elsif ($outformat eq "vcf") { $infile  = "$DIR_main/denovo.${min_cov}x.indel.vcf"; }				
+				#my $outfile = "$DIR_main/coords.txt";
+				#extractCoords($infile, $outfile);
+				
+				my $dbfile = "$DIR_main/denovos.db";
 				my $outfile = "$DIR_main/coords.txt";
-				extractCoords($infile, $outfile);
+				extractCoordsDB($dbfile, $BEDFILE, $intarget, $outfile);
 			
 				# adjust parameters for validation step (max sensitivity)
 				$kmer = 10;
@@ -370,11 +377,15 @@ sub init()
 				runCmd("FindSomatic", $command_main);
 			
 				# extract coordinates of candidate mutation
-				my $infile = "";
-				if ($outformat eq "annovar") { $infile = "$DIR_main/somatic.${min_cov}x.indel.annovar"; }
-				elsif ($outformat eq "vcf") { $infile  = "$DIR_main/somatic.${min_cov}x.indel.vcf"; }
+				#my $infile = "";
+				#if ($outformat eq "annovar") { $infile = "$DIR_main/somatic.${min_cov}x.indel.annovar"; }
+				#elsif ($outformat eq "vcf") { $infile  = "$DIR_main/somatic.${min_cov}x.indel.vcf"; }
+				#my $outfile = "$DIR_main/coords.txt";
+				#extractCoords($infile, $outfile);
+
+				my $dbfile = "$DIR_main/somatic.db";
 				my $outfile = "$DIR_main/coords.txt";
-				extractCoords($infile, $outfile);
+				extractCoordsDB($dbfile, $BEDFILE, $intarget, $outfile);
 			
 				# adjust parameters for validation step (max sensitivity)
 				$kmer = 10;
@@ -432,26 +443,6 @@ sub init()
 #
 # Initilization 
 #
-sub extractCoords {
-
-	my $in = $_[0];
-	my $out = $_[1];
-	
-	open IN, "< $in" or die "Can't open $in ($!)\n";
-	open OUT, "> $out" or die "Can't open $out ($!)\n";
-	
-	while (<IN>) {
-		chomp;
-		next if ($_ =~ /^#/); # skip comments
-		
-		my @A = split /\t/, $_;
-		print OUT "$A[0]\t$A[1]\n"; 
-	}
-	
-	close IN;
-	close OUT;
-}
-
 ## do the job
 ##########################################
 
