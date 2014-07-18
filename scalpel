@@ -446,6 +446,9 @@ sub init()
 ## do the job
 ##########################################
 
+my $datestring = localtime();
+print "Local date and time: $datestring\n";
+
 init();
 
 ##########################################

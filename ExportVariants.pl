@@ -163,6 +163,7 @@ sub printVariants {
 		print "##INFO=<ID=INH,Number=1,Type=String,Description=\"inheritance\">\n";
 		print "##INFO=<ID=BESTSTATE,Number=1,Type=String,Description=\"state of the mutation\">\n";
 		print "##INFO=<ID=COVSTATE,Number=1,Type=String,Description=\"coverage state of the mutation\">\n";
+		print "##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=\"Somatic mutation in primary\">";
 		print "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
 		print "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"k-mer Depth\">\n";
 		print "##FORMAT=<ID=AD,Number=.,Type=Integer,Description=\"k-mer depth supporting reference/indel at the site\">\n";

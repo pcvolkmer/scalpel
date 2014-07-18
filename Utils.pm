@@ -220,8 +220,9 @@ sub elapsedTime {
 	my $time_taken = $_[0];
 	my $tool = $_[1];
 
-	my $hours   = $time_taken / 3600;
+	my $hours = $time_taken / 3600;
 	my $days = $hours / 24; 
+	$hours = $hours % 24;
 	my $seconds = $time_taken % 3600;
 	my $minutes = $seconds / 60;
 	$seconds    = $seconds % 60;

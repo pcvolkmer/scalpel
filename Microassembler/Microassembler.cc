@@ -186,6 +186,9 @@ void Microassembler::processGraph(Graph_t & g, const string & refname, const str
 		graphCnt++;
 		
 		//VERBOSE = false;
+		
+		// skip region if no mapped reads
+		if(g.countMappedReads()<=0) { return; }
 
 		cerr << "== Processing " << graphCnt << ": " << refname 
 			<< " numsequences: " << g.readid2info.size() 
