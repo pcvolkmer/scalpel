@@ -54,6 +54,8 @@ std::string rc_str(const std::string & str);
 
 bool Fasta_Read(FILE * fp, std::string & s, std::string & hdr);
 
+bool isNseq(const std::string & seq);
+
 bool isRepeat(const std::string & seq, int K);
 
 bool isAlmostRepeat(const std::string & seq, int K, int max);

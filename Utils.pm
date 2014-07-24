@@ -12,7 +12,7 @@ package Utils;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(runCmd normalizeIndel uniq binarySearch inTarget bychrpos elapsedTime);
+@EXPORT = qw(runCmd normalizeIndel uniq binarySearch inTarget bychrpos elapsedTime fisher_yates_shuffle);
 @EXPORT_OK = qw($findVariants $findDenovos $findSomatic $exportTool $bamtools);
 
 use strict;
@@ -233,6 +233,19 @@ sub elapsedTime {
 	$seconds = floor($seconds);
 
 	print STDERR "$tool elapsed time: $days day(s) $hours hour(s) $minutes minute(s) $seconds second(s)\n";
+}
+
+
+# fisher_yates_shuffle( \@array ) : 
+# generate a random permutation of @array in place
+sub fisher_yates_shuffle {
+    my $array = shift;
+    my $i;
+    for ($i = @$array; --$i; ) {
+        my $j = int rand ($i+1);
+        next if $i == $j;
+        @$array[$i,$j] = @$array[$j,$i];
+    }
 }
 
 # log 10

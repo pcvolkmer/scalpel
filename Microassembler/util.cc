@@ -97,6 +97,24 @@ string rc_str(const string & str)
 	return retval;
 }
 
+// isNseq
+// returns true if the input sequence contains only Ns
+//////////////////////////////////////////////////////////////////////////
+bool isNseq(const string & seq)
+{
+	bool result = true;
+
+	int end = seq.length();
+	for (int i = 0; i < end; i++)
+	{
+
+		if ( (seq[i] != 'N') || (seq[i] != 'n') ) {
+			result = false;
+			break;
+		}
+	}
+	return result;	
+}
 
 // isRepeat
 // returns true if the input sequence contains any repeat of size K

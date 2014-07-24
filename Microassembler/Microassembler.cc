@@ -701,6 +701,10 @@ int Microassembler::run(int argc, char** argv)
 			graphref = (*ri).first;
 			//cout << graphref << endl;
 			Ref_t * refinfo = (*ri).second;
+			
+			// continue if the region has only Ns or prefect repeat of size maxK
+			if(isNseq(refinfo->rawseq)) { continue; } 
+			if(isRepeat(refinfo->rawseq, maxK)) { continue; } 
 
 			region.LeftRefID = reader.GetReferenceID(refinfo->refchr); // atoi((refinfo->refchr).c_str());
 			region.RightRefID = reader.GetReferenceID(refinfo->refchr); // atoi((refinfo->refchr).c_str());

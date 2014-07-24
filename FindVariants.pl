@@ -424,6 +424,7 @@ sub schedule_jobs {
 	
 	# random permutation of the regions to assemble
 	#my @regions = random_permutation(@$array);
+    fisher_yates_shuffle( $array );
 	my @regions = @$array;
 	my $arraySize = $#regions + 1;
 
