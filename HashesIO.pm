@@ -12,7 +12,7 @@ package HashesIO;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(loadLoc2KeyMerge loadLoc2Key printLoc2key loadRefCovMerge printRefCov loadCov loadDB);
+@EXPORT = qw(loadLoc2KeyMerge loadLoc2Key printLoc2key loadRefCovMerge printRefCov loadCov loadDB mergeDBs);
 
 use strict;
 use warnings;
@@ -43,6 +43,79 @@ sub loadCov {
 		$hash->{$key} = $cov;
 	}
 	close FILE;
+}
+
+# Merge mutliple variants DBs 
+#####################################################
+sub mergeDBs {
+	
+	#mergeDBs(\%$hash, $dbm_obj, $count, $WORK);
+	
+	my $hash = $_[0];
+	my $dbm_obj = $_[1];
+	my $count = $_[2];
+	my $WORK = $_[3];
+	
+	print STDERR "Merge DBs...\n";
+
+	$dbm_obj->Lock;
+	
+	#update statistics in the database
+	if(exists $hash->{stats})  { 
+		my $sts = $hash->{stats}; 
+		$sts->{num_exceptions} = 0;
+		$sts->{num_dfs_limit} = 0;
+		$sts->{num_partial_align} = 0;
+		$sts->{num_with_cycles} = 0;
+		$sts->{num_ok} = 0;
+		$hash->{stats} = $sts;
+	}
+	
+	for(my $i = 1; $i <= $count; $i++) {
+	
+		my %hash_i;
+		my $dbm_obj_i = tie %hash_i, 'MLDBM::Sync', "$WORK/variants.$i.db", O_CREAT|O_RDWR, 0640;
+		$dbm_obj_i->Lock;
+		
+		foreach my $key (keys %hash_i) {
+			next if($key eq "stats"); # skip stats info
+			
+			my $mut = $hash_i{$key};
+			if( !(exists $hash->{$key}) ) {
+				$hash->{$key} = $mut;
+			}
+			else { # denovo already in the table
+				# update the coverage to the highest value found so far
+				my $mut_old = $hash->{$key};
+				if ($mut_old->{avgcov} < $mut->{avgcov}) { $mut_old->{avgcov} = $mut->{avgcov}; } # max avg coverage
+				if ($mut_old->{mincov} < $mut->{mincov}) { $mut_old->{mincov} = $mut->{mincov}; } # max min coverage
+				$hash->{$key} = $mut_old;
+			}
+		}
+
+		#update statistics in the database
+		my $stats_i;
+		if(exists $hash_i{stats}) { $stats_i = $hash_i{stats}; }
+
+		if( !(exists $hash->{stats}) ) { 
+			$hash->{stats} = $stats_i;
+		}
+		else { 
+			my $old_stats = $hash->{stats}; 
+			$old_stats->{num_repeats} += $stats_i->{num_repeats};
+			$old_stats->{num_exceptions} += $stats_i->{num_exceptions};
+			$old_stats->{num_dfs_limit} += $stats_i->{num_dfs_limit};
+			$old_stats->{num_partial_align} += $stats_i->{num_partial_align};
+			$old_stats->{num_with_cycles} += $stats_i->{num_with_cycles};
+			$old_stats->{num_ok} += $stats_i->{num_ok};
+			$hash->{stats} = $old_stats;
+		}
+		$dbm_obj_i->UnLock;
+		
+		runCmd("delete DB", "rm $WORK/variants.$i.db.*"); # delete DB
+	}
+	
+	$dbm_obj->UnLock;
 }
 
 # Load coverage information from files
@@ -265,7 +338,7 @@ sub loadDB {
 		#if ($chr =~ /chr\w*(\w+)/) { $variants{$key}->{chr} = $1; }
 		
 		if($intarget) { # export if intarget true
-			next if(inTarget($mut, $exons) eq "false");
+			next if(sget($mut, $exons) eq "false");
 		}		
 		
 		$hash->{$key} = $mut; 
