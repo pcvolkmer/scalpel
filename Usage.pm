@@ -30,6 +30,7 @@ my %defaults = (
 	maxmismatch 		=> 3,
 	min_cov 			=> 5,
 	max_cov				=> 1000000,
+	minchi2				=> 0,
 	maxchi2				=> 1000000,
 	outratio			=> 0.05,
 	WORK 				=> "./outdir",
@@ -216,10 +217,12 @@ exit;
 #
 # Message about this program and how to use it
 #
-sub usageExport() {
+sub usageExport {
+	
+my $name = $_[0];
 print STDERR <<END;
 
-usage: ExportVariants.pl --db <file> --bed <BED file> [OPTIONS]
+usage: $name --db <file> --bed <BED file> [OPTIONS]
 
 OPTIONS:
 
@@ -235,6 +238,7 @@ OPTIONS:
     --type <text>      : mutation type (snp, del, ins, indel, all: everything) [default $defaults{SVtype}]
     --mincov <int>     : minimum coverage for a mutation to be exported  [default $defaults{min_cov}]
     --maxcov <int>     : maximum coverage for a mutation to be exported  [default $defaults{max_cov}]
+    --minchi2 <float>  : minimum chi-square score for a mutation to be exported [default $defaults{minchi2}]
     --maxchi2 <float>  : maximum chi-square score for a mutation to be exported [default $defaults{maxchi2}]
     --covratio <float> : minimum coverage ratio (AlleleCov/TotCov) for a mutation to be exported to file [default $defaults{outratio}]
     --intarget         : export mutations only inside the target regions from the BED file

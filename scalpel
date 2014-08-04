@@ -31,12 +31,14 @@ $|=1;
 my $help;
 my $VERBOSE = 0;
 
-my $single = 0; # single exome study 
-my $denovo = 0; # family study (mom,dad,affected,sibling)
+my $single  = 0; # single exome study 
+my $denovo  = 0; # family study (mom,dad,affected,sibling)
 my $somatic = 0; # normal/tumor study
+my $export  = 0; # export variants to file
 
 # required arguments
 my $BAMFILE;
+my $DBFILE;
 my $BAMNORMAL;
 my $BAMTUMOR;
 my $BAMDAD;
@@ -57,20 +59,22 @@ my $windowSize = $defaults->{windowSize};
 my $delta = $defaults->{delta};
 my $map_qual = $defaults->{map_qual};
 my $maxmismatch = $defaults->{maxmismatch};
-my $min_cov = $defaults->{min_cov};
 my $covratio = $defaults->{covratio};
 my $WORK  = $defaults->{WORK};
 my $MAX_PROCESSES = $defaults->{MAX_PROCESSES};
 my $sample = $defaults->{sample};
 my $selected = $defaults->{selected};
 my $dfs_limit = $defaults->{pathlimit};
+
+# output arguments
+my $intarget;
+my $min_cov = $defaults->{min_cov};
+my $max_cov = $defaults->{max_cov};
+my $min_chi2 = $defaults->{minchi2};
+my $max_chi2 = $defaults->{maxchi2};
+my $outratio = $defaults->{outratio};
 my $outformat = $defaults->{format};
 my $SVtype  = $defaults->{SVtype};
-
-
-# output parameters
-my $intarget;
-my $outratio = $defaults->{outratio};
 
 my $argcnt = scalar(@ARGV);
 my $start_time = time;
@@ -110,6 +114,7 @@ COMMAND:
     --single  : single exome study 
     --denovo  : family study (mom,dad,affected,sibling)
     --somatic : normal/tumor study
+    --export  : export variants from DB to file
 
 END
 exit;
@@ -127,8 +132,9 @@ GetOptions(
     'single'  => \$single,
     'denovo'  => \$denovo,
     'somatic' => \$somatic,
+    'export'  => \$export,
 
-	# required parameters (single mode)
+	# required parameters
     'bam=s'    => \$BAMFILE,
     'normal=s' => \$BAMNORMAL,
     'tumor=s'  => \$BAMTUMOR,
@@ -138,12 +144,16 @@ GetOptions(
     'sib=s'    => \$BAMSIB,
     'bed=s'    => \$BEDFILE,
     'ref=s'    => \$REF,
+    'db=s'     => \$DBFILE,
 
 	# optional paramters
     'kmer=i'       => \$kmer,
     'covthr=i'     => \$cov_threshold,
     'lowcov=i'     => \$tip_cov_threshold,
     'mincov=i'     => \$min_cov,
+    'maxcov=i'     => \$max_cov,
+    'minchi2=f'    => \$min_chi2,	
+    'maxchi2=f'    => \$max_chi2,	
     'covratio=f'   => \$covratio,
     'outratio=f'   => \$outratio,
     'radius=i'     => \$radius,
@@ -157,6 +167,7 @@ GetOptions(
     'sample=s'     => \$sample,
     'coords=s'     => \$selected,
 	'format=s'     => \$outformat,
+	'type=s'       => \$SVtype,
 	'intarget!'    => \$intarget,
 
 ) or usage();
@@ -171,13 +182,45 @@ sub init()
 	usage() if ($argcnt < 1);	
 	usage() if ($help && ($argcnt==1));	
 		
-	if( ($single==0) && ($denovo==0) && ($somatic==0) ) { 
+	if( ($single==0) && ($denovo==0) && ($somatic==0) && ($export==0) ) { 
 		print STDERR "Command required!\n";
 		usage(); 
 	}
 	else {
 		
 		my $ABS_WORK = File::Spec->rel2abs($WORK);
+		
+		if($export)  {
+			if ($argcnt < 2) {
+				header(); 
+				usageExport("scalpel --export");
+			}
+			usageExport("scalpel --export") if ($help);
+			if( (!defined $DBFILE) || (!defined $BEDFILE) ) { 
+				print STDERR "Required parameter missing!\n";
+				header(); 
+				usageExport("scalpel --export");   
+			}
+			else{ # run ExportVariants.pl on input parameters
+				header(); # print header
+				my $command = "$exportTool ".
+					"--db $DBFILE ".
+					"--bed $BEDFILE ".
+					"--mincov $min_cov ".
+					"--maxcov $max_cov ".
+					"--covratio $outratio ".
+					"--minchi2 $min_chi2 ".
+					"--maxchi2 $max_chi2 ".
+					"--format $outformat ".
+					"--type $SVtype";
+				if($VERBOSE) { $command .= " --verbose"; }
+				if($intarget) { $command .= " --intarget"; }
+			
+				print STDERR "Command: $command\n" if($VERBOSE);
+				print STDERR "\n***START EXPORTING***\n";
+				runCmd("ExportVariants", $command);
+			}
+		}
 		
 		if($single)  {
 			if ($argcnt < 2) {
@@ -435,7 +478,7 @@ sub init()
 				}
 			}
 		}
-		print STDERR "\nOutput saved in: $ABS_WORK\n";
+		#print STDERR "\nOutput saved in: $ABS_WORK\n";
 	}
 }
 

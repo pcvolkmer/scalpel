@@ -41,6 +41,7 @@ my $_format  = $defaults->{format};
 my $_SVtype  = $defaults->{SVtype};
 my $_minCov  = $defaults->{min_cov};
 my $_maxCov  = $defaults->{max_cov};
+my $_minchi2 = $defaults->{minchi2};
 my $_maxchi2 = $defaults->{maxchi2};
 my $_minCovRatio = $defaults->{covratio};
 my $_intarget = 0;
@@ -52,6 +53,7 @@ my $minCov  = $_minCov;
 my $maxCov  = $_maxCov;
 my $intarget = $_intarget;
 my $maxchi2 = $_maxchi2;
+my $minchi2 = $_minchi2;
 # min coverage ration (AleleCov/TotCov) for a mutation to be considered valid
 # Mutation with coverage ration lower than this are considered sequencing errors.
 my $minCovRatio = $_minCovRatio;
@@ -96,11 +98,12 @@ GetOptions(
     'type=s'     => \$SVtype,
     'mincov=i'   => \$minCov,
     'maxcov=i'   => \$maxCov,
+    'minchi2=f'  => \$minchi2,
     'maxchi2=f'  => \$maxchi2,
     'covratio=f' => \$minCovRatio,
     'intarget!'  => \$intarget,
 
-) or usageExport();
+) or usageExport("ExportVariants.pl");
 
 #####################################################
 #
@@ -108,12 +111,12 @@ GetOptions(
 #
 sub init()
 {
-	usageExport() if ($argcnt < 1);
-	usageExport() if( $help );
+	usageExport("ExportVariants.pl") if ($argcnt < 1);
+	usageExport("ExportVariants.pl") if( $help );
 	
 	if( (!defined $dbfile) || (!defined $bedfile) ) { 
 		print STDERR "Required parameter missing!\n";
-		usageExport(); 
+		usageExport("ExportVariants.pl"); 
 	}
 	
 	if ($minCov == 0) { $minCov = -1000000; }	
@@ -130,6 +133,7 @@ sub printParams {
 	print STDERR "-- SV type: $SVtype\n";
 	print STDERR "-- minimum coverage: $minCov\n";
 	print STDERR "-- maximum coverage: $maxCov\n";
+	print STDERR "-- minimum chi-square score: $minchi2\n";
 	print STDERR "-- maximum chi-square score: $maxchi2\n";
 	print STDERR "-- minimum coverage ratio: $minCovRatio\n";
 	my $txt = "false";
@@ -243,6 +247,7 @@ sub printVariants {
 		
 		#********************************************#
 		next if($chi2Score > $maxchi2);
+		next if($chi2Score < $minchi2);
 		#********************************************#
 		
 		my $annovar_ref = $ref;
