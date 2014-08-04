@@ -92,11 +92,11 @@ sub loadCoordinates {
 	
 	print STDERR "Loading coordinates...";
 	
+	my $cntall_locs = 0;
 	if ($file ne "null") {
 		 
 		open SELECTED, "< $file" or die "Can't open $file ($!)\n";
 
-		my $cntall_locs = 0;
 		while (<SELECTED>) {
 			chomp;
 			next if ($_ =~ /^#/); # skip comments
@@ -118,6 +118,7 @@ sub loadCoordinates {
 			print STDERR "$cntall_locs locations.\n";
 		#}
 	}
+	return $cntall_locs;
 }
 
 ## load exons list
@@ -192,6 +193,8 @@ sub loadExonsBed {
 	#if($VERBOSE) {
 		print STDERR "$cntall_exons targets (filtered $cntovl_exons overlapping).\n";
 	#}
+	
+	return $cntall_exons;
 }
 
 # load the genome in fasta format

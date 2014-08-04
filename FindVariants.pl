@@ -198,11 +198,17 @@ sub run {
 
 	printParams("$fdir/parameters.txt");
 		
+	my $cnt = 0;
 	if($selected ne "null") {
-		loadCoordinates("$selected", \%exons, $VERBOSE);
+		$cnt = loadCoordinates("$selected", \%exons, $VERBOSE);
 	}
 	else {
-		loadExonsBed("$bedfile", \%exons, $radius, $VERBOSE);
+		$cnt = loadExonsBed("$bedfile", \%exons, $radius, $VERBOSE);
+	}
+	
+	if ($cnt == 0) {
+		print STDERR "No regions to examine. Nothing to do! exit.\n";
+		exit;
 	}
 	
 	#load genome from fasta file
