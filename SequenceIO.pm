@@ -35,16 +35,20 @@ sub extractCoords {
 	open IN, "< $in" or die "Can't open $in ($!)\n";
 	open OUT, "> $out" or die "Can't open $out ($!)\n";
 	
+	my $cnt=0;
 	while (<IN>) {
 		chomp;
 		next if ($_ =~ /^#/); # skip comments
 		
 		my @A = split /\t/, $_;
-		print OUT "$A[0]\t$A[1]\n"; 
+		print OUT "$A[0]\t$A[1]\n";
+		$cnt++
 	}
 	
 	close IN;
 	close OUT;
+	
+	return $cnt; 
 }
 
 ## extract coordinates from DB

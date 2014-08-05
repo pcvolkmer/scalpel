@@ -39,8 +39,8 @@ my %defaults = (
 	selected 			=> "null",
 	pathlimit 			=> 100000,
 	format				=> "vcf",
-	SVtype				=> "all",
-	version_num			=> "0.1.1(beta)",
+	SVtype				=> "indel",
+	version_num			=> "0.2.1(beta)",
 );
 
 #####################################################
@@ -170,7 +170,7 @@ print STDERR <<END;
 
 usage: $name --normal <BAM file> --tumor <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
 
-Detect somatic INDELs in a tumor/sample pair
+Detect somatic INDELs in a tumor/normal pair
 
 OPTIONS:
 

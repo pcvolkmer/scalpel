@@ -15,11 +15,13 @@ CONTENTS
 
 SYNOPSIS
 
-	scalpel --single --bam file.bam --bed file.bed --ref ref.fa
+	scalpel --single --bam file.bam --bed file.bed --ref ref.fa [OPTIONS]
 
-	scalpel --denovo --dad dad.bam --mom mom.bam --aff aff.bam --sib sib.bam --bed file.bed --ref ref.fa
+	scalpel --denovo --dad dad.bam --mom mom.bam --aff aff.bam --sib sib.bam --bed file.bed --ref ref.fa [OPTIONS]
 
-	scalpel --somatic --normal normal.bam --tumor tumor.bam --bed file.bed --ref ref.fa
+	scalpel --somatic --normal normal.bam --tumor tumor.bam --bed file.bed --ref ref.fa [OPTIONS]
+	
+	scalpel --export --db <file> --bed <BED file> [OPTIONS]
 
 
 DESCRIPTION
@@ -161,6 +163,40 @@ COMMANDS AND OPTIONS
 	  where OUTDIR is the output directory selected with option "--dir" [default ./outdir]
 
 	  Note 2: the input reference file (option "--ref") must be the same one that was used to create the BAM file.
+
+	***Export***
+	
+	By default scalpel saves the list of detected indels in a file named variants.*.indel.* in the 
+	selected output directory according to the default filtering parameters. 
+	However it is recommended to explore different filtering criteria using the export tool:
+	
+	usage: scalpel --export --db <file> --bed <BED file> [OPTIONS]
+
+	OPTIONS:
+
+	    --help             : this (help) message
+	    --verbose          : verbose mode
+
+	  Required:
+	    --db <file>        : Database of mutations
+	    --bed <file>       : BED file with list of exome-target coordinates
+
+	  Optional:
+	    --format <text>    : output format for variants (annovar | vcf) [default vcf]
+	    --type <text>      : mutation type (snp, del, ins, indel, all: everything) [default indel]
+	    --mincov <int>     : minimum coverage for a mutation to be exported  [default 5]
+	    --maxcov <int>     : maximum coverage for a mutation to be exported  [default 1000000]
+	    --minchi2 <float>  : minimum chi-square score for a mutation to be exported [default 0]
+	    --maxchi2 <float>  : maximum chi-square score for a mutation to be exported [default 1000000]
+	    --covratio <float> : minimum coverage ratio (AlleleCov/TotCov) for a mutation to be exported to file [default 0.05]
+	    --intarget         : export mutations only inside the target regions from the BED file
+
+	  Supported output formats:
+	    1. annovar
+	    2. vcf
+
+		The database.db file can be found in the output directory for the single operation 
+		mode or in the correspective subdirectories (main and validation for denovo and soamtic modes).
 
 OUTPUT FORMAT
 

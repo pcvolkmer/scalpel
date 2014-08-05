@@ -320,7 +320,11 @@ sub init()
 				
 				my $dbfile = "$DIR_main/denovos.db";
 				my $outfile = "$DIR_main/coords.txt";
-				extractCoordsDB($dbfile, $BEDFILE, $intarget, $outfile);
+				my $num_calls = extractCoordsDB($dbfile, $BEDFILE, $intarget, $outfile);				
+				if ($num_calls == 0) {
+					print STDERR "No candidate calls to validate. Nothing to do! exit.\n";
+					exit;
+				}
 			
 				# adjust parameters for validation step (max sensitivity)
 				$kmer = 10;
@@ -428,7 +432,12 @@ sub init()
 
 				my $dbfile = "$DIR_main/somatic.db";
 				my $outfile = "$DIR_main/coords.txt";
-				extractCoordsDB($dbfile, $BEDFILE, $intarget, $outfile);
+				
+				my $num_calls = extractCoordsDB($dbfile, $BEDFILE, $intarget, $outfile);
+				if ($num_calls == 0) {
+					print STDERR "No candidate calls to validate. Nothing to do! exit.\n";
+					exit;
+				}
 			
 				# adjust parameters for validation step (max sensitivity)
 				$kmer = 10;
@@ -490,7 +499,7 @@ sub init()
 ##########################################
 
 my $datestring = localtime();
-print "Local date and time: $datestring\n";
+print STDERR "Local date and time: $datestring\n";
 
 init();
 
