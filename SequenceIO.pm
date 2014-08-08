@@ -35,7 +35,7 @@ sub extractCoords {
 	open IN, "< $in" or die "Can't open $in ($!)\n";
 	open OUT, "> $out" or die "Can't open $out ($!)\n";
 	
-	my $cnt=0;
+	my $cnt = 0;
 	while (<IN>) {
 		chomp;
 		next if ($_ =~ /^#/); # skip comments
@@ -71,18 +71,22 @@ sub extractCoordsDB {
 	
 	open OUT, "> $out" or die "Can't open $out ($!)\n";
 
+	my $cnt = 0;
 	foreach my $key (keys %variants) {
 		my $mut = $variants{$key};
 
-		next if($mut->{type} eq "snp");
+		next if($mut->{type} eq "snp"); # skip SNPs
 				
 		my $chr = $mut->{chr};
 		my $pos = $mut->{pos};		
 		
-		print OUT "$chr\t$pos\n"; 
+		print OUT "$chr\t$pos\n";
+		$cnt++
 	}
 	
 	close OUT;
+	
+	return $cnt; 
 }
 
 
