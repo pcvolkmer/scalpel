@@ -149,6 +149,13 @@ sub printVariants {
 		
 	##  print header if file did not exist (created now)
 	if($mode eq "annovar") { # annovar format
+		#print filters
+		print "##fileformat=ANNOVAR\n";
+		print "##mincov=$minCov\n"; 
+		print "##maxcov=$maxCov\n"; 
+		print "##minchi2=$minchi2\n"; 
+		print "##maxchi2=$maxchi2\n"; 
+		print "##covratio=$minCovRatio\n"; 
 		print "#chr\tstart\tend\tref\tobs\tid\tsize\ttype\tavgKcov\tminKcov\tzygosity\taltKcov\tcovRatio\tchi2score\tinheritance\tbestState\tcovState\n"; 
 	} 
 	if($mode eq "vcf") { # vcf format
@@ -167,11 +174,19 @@ sub printVariants {
 		print "##INFO=<ID=INH,Number=1,Type=String,Description=\"inheritance\">\n";
 		print "##INFO=<ID=BESTSTATE,Number=1,Type=String,Description=\"state of the mutation\">\n";
 		print "##INFO=<ID=COVSTATE,Number=1,Type=String,Description=\"coverage state of the mutation\">\n";
-		print "##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=\"Somatic mutation in primary\">";
+		#print "##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=\"Somatic mutation in primary\">\n";
 		print "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
 		print "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"k-mer Depth\">\n";
 		print "##FORMAT=<ID=AD,Number=.,Type=Integer,Description=\"k-mer depth supporting reference/indel at the site\">\n";
 		my $sample_name = "sample_name"; # replace by SM tag from @RG
+		
+		#print filters
+		print "##mincov=$minCov\n"; 
+		print "##maxcov=$maxCov\n"; 
+		print "##minchi2=$minchi2\n"; 
+		print "##maxchi2=$maxchi2\n"; 
+		print "##covratio=$minCovRatio\n"; 
+
 		print "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t$sample_name\n";
 	}
 	elsif($mode eq "scalpel") { # scalpel format
@@ -295,8 +310,8 @@ sub printVariants {
   				my $format_val = "$gt:$altcov,$mincov:$totcov";
 				$covState=~s/ /,/g; # no spaces allowed by vcf spec
   				my $info = "AVGCOV=$avgcov;MINCOV=$mincov;ALTCOV=$altcov;ZYG=$zyg;COVRATIO=$covRatio;CHI2=$chi2Score;INH=$inher;BESTSTATE=$bestState;COVSTATE=$covState";
-  				if($t eq "snp") { $str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start, ".", $ref, $qry, ".", "PASS", $info); }
-  				else            { $str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start-1, ".", $vcf_ref, $vcf_qry, ".", "PASS", $info, $format_str, $format_val); }
+  				if($t eq "snp") { $str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start, ".", $ref, $qry, ".", ".", $info); }
+  				else            { $str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start-1, ".", $vcf_ref, $vcf_qry, ".", ".", $info, $format_str, $format_val); }
 			}
 			else { 
 				$str = sprintf("%s\t%d\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $pos, $t, $l, $avgcov, $mincov, $zyg, $ref, $qry, $id, $altcov, $covRatio, $chi2Score, $inher, $bestState, $covState);
@@ -323,8 +338,10 @@ sub printVariants {
 init();
 printParams() if ($VERBOSE);
 loadExonsBed("$bedfile", \%exons, 0, $VERBOSE);
-loadDB("$dbfile", \%variants, \%exons, $intarget);
-printVariants("$format");
+my $flag = loadDB("$dbfile", \%variants, \%exons, $intarget);
+if ($flag != -1) {
+	printVariants("$format");
+}
 
 ##########################################
 

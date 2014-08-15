@@ -31,7 +31,7 @@ my %defaults = (
 	min_cov 			=> 5,
 	max_cov				=> 1000000,
 	minchi2				=> 0,
-	maxchi2				=> 1000000,
+	maxchi2				=> 20,
 	outratio			=> 0.05,
 	WORK 				=> "./outdir",
 	MAX_PROCESSES 		=> 1,
@@ -71,7 +71,7 @@ OPTIONS:
   Required:
     --bam <BAM file>   : BAM file with the reference-aligned reads
     --bed <BED file>   : BED file with list of exome-target coordinates
-    --ref <FASTA file> : reference genome in FASTA format
+    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
     --kmer <int>       : k-mer size [default $defaults{kmer}]
@@ -98,7 +98,7 @@ OPTIONS:
   Note 1: the list of detected INDELs is saved in file: OUTDIR/variants.*.indel.*
   where OUTDIR is the output directory selected with option "--dir" [default $defaults{WORK}]
 
-  Note 2: the input reference file (option "--ref") must be the same one that was used to create the BAM file.
+  Note 2: use the export tool (option "--export") to export mutations using different filtering criteria
 
 END
 exit;
@@ -128,7 +128,7 @@ OPTIONS:
     --aff <BAM file>   : affected child BAM file
     --sib <BAM file>   : sibling BAM file
     --bed <BED file>   : BED file with list of exome-target coordinates
-    --ref <FASTA file> : reference genome in FASTA format
+    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
     --kmer <int>       : k-mer size [default $defaults{kmer}]
@@ -153,7 +153,7 @@ OPTIONS:
   Note 1: the list of de novo INDELs is saved in file: OUTDIR/denovos.*.indel.*
   where OUTDIR is the output directory selected with option "--dir" [default $defaults{WORK}]
 
-  Note 2: the input reference file (option "--ref") must be the same one that was used to create the BAM file.
+  Note 2: use the export tool (option "--export") to export mutations using different filtering criteria
 
 END
 exit;
@@ -181,7 +181,7 @@ OPTIONS:
     --normal <BAM file>   : normal BAM file
     --tumor  <BAM file>   : tumor BAM file
     --bed    <BED file>   : BED file with list of exome-target coordinates
-    --ref    <FASTA file> : reference genome in FASTA format
+    --ref    <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
     --kmer <int>          : k-mer size [default $defaults{kmer}]
@@ -204,9 +204,9 @@ OPTIONS:
     --outratio <float>    : minimum coverage ratio for exporting mutation to file (default: $defaults{outratio})
 
   Note 1: the list of somatic INDELs is saved in file: OUTDIR/somatic.*.indel.* 
-  where OUTDIR is the output directory selected with option "--dir" [default $defaults{WORK}]
-
-  Note 2: the input reference file (option "--ref") must be the same one that was used to create the BAM file.
+  where OUTDIR is the output directory selected with option "--dir" [default $defaults{WORK}].
+  
+  Note 2: use the export tool (option "--export") to export mutations using different filtering criteria
 
 END
 exit;

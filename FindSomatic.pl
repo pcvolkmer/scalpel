@@ -52,6 +52,7 @@ my $delta = $defaults->{delta};
 my $map_qual = $defaults->{map_qual};
 my $maxmismatch = $defaults->{maxmismatch};
 my $min_cov = $defaults->{min_cov};
+my $max_cov = $defaults->{max_cov};
 my $covratio = $defaults->{covratio};
 my $outratio = $defaults->{outratio};
 my $WORK  = $defaults->{WORK};
@@ -557,9 +558,7 @@ sub findSomaticMut {
 sub exportSVs {
 	
 	print STDERR "-- Exporting SVs to file\n";
-	
-	my $max_cov = 10000000;
-	
+		
 	# export somatic 
 	#runCmd("export all", "$exportTool --db $WORK/somatic.db --bed $BEDFILE --format annovar --type all --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/somatic.${min_cov}x.all.txt");
 	#runCmd("export snp", "$exportTool --db $WORK/somatic.db --bed $BEDFILE --format annovar --type snp --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/somatic.${min_cov}x.snp.txt");

@@ -321,29 +321,36 @@ sub loadDB {
 	my $intarget = $_[3];
 	my %db;
 	
-	my $dbm_obj = tie %db, 'MLDBM::Sync', $dbFile, O_RDONLY, 0640 or print "Tie unsuccesful!\n";
+	my $out = 1;
+	if(!-e "$dbFile.dir") { $out = -1; }
+	else {
+		
+		my $dbm_obj = tie %db, 'MLDBM::Sync', $dbFile, O_RDONLY, 0640 or print "Tie unsuccesful!\n";
 	
-	# tie once to database, read/write as much as necessary
-    $dbm_obj->Lock;
+		# tie once to database, read/write as much as necessary
+	    $dbm_obj->Lock;
 
-	#make a copy of the DB hash for fast sorting
-	foreach my $key (keys %db) {
+		#make a copy of the DB hash for fast sorting
+		foreach my $key (keys %db) {
 		
-		next if($key eq "stats"); # skip stats info
+			next if($key eq "stats"); # skip stats info
 		
-		my $mut = $db{$key};
-		#update chromosome name to correctly sort the variants
-		#my $chr = $mut->{chr};
-		#if ($chr =~ /chr/) { $mut->{chr} = substr($chr,3); }
-		#if ($chr =~ /chr\w*(\w+)/) { $variants{$key}->{chr} = $1; }
+			my $mut = $db{$key};
+			#update chromosome name to correctly sort the variants
+			#my $chr = $mut->{chr};
+			#if ($chr =~ /chr/) { $mut->{chr} = substr($chr,3); }
+			#if ($chr =~ /chr\w*(\w+)/) { $variants{$key}->{chr} = $1; }
 		
-		if($intarget) { # export if intarget true
-			next if(sget($mut, $exons) eq "false");
-		}		
+			if($intarget) { # export if intarget true
+				next if(sget($mut, $exons) eq "false");
+			}		
 		
-		$hash->{$key} = $mut; 
+			$hash->{$key} = $mut; 
+		}
+		$dbm_obj->UnLock;
 	}
-	$dbm_obj->UnLock;
+	
+	return $out;
 }
 
 1;
