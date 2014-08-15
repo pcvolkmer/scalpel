@@ -1,0 +1,12 @@
+----------------------------------------------------------
+0.2.1 | Fri Aug 15 10:47:30 2014
+
+  * new export tool to extract mutations from DB file
+  * improved speed for whole-genome studies
+  * fixed DB lock file issue for NFS file system
+  * added support for VCF output format
+
+----------------------------------------------------------
+0.2.1 | Wed Dec 11 15:11:21 2013
+
+  * first public (beta) release
