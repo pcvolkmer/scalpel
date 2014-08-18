@@ -322,10 +322,13 @@ sub loadDB {
 	my %db;
 	
 	my $out = 1;
-	if(!-e "$dbFile.dir") { $out = -1; }
+	if(!-e "$dbFile.dir") { 
+		$out = -1; 
+		print STDERR "ERROR: $dbFile not found!\n";
+	}
 	else {
 		
-		my $dbm_obj = tie %db, 'MLDBM::Sync', $dbFile, O_RDONLY, 0640 or print "Tie unsuccesful!\n";
+		my $dbm_obj = tie %db, 'MLDBM::Sync', $dbFile, O_RDONLY, 0640 or print STDERR "Tie unsuccesful!\n";
 	
 		# tie once to database, read/write as much as necessary
 	    $dbm_obj->Lock;
@@ -342,7 +345,7 @@ sub loadDB {
 			#if ($chr =~ /chr\w*(\w+)/) { $variants{$key}->{chr} = $1; }
 		
 			if($intarget) { # export if intarget true
-				next if(sget($mut, $exons) eq "false");
+				next if(inTarget($mut, $exons) eq "false");
 			}		
 		
 			$hash->{$key} = $mut; 
