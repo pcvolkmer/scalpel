@@ -61,6 +61,7 @@ my $sample = $defaults->{sample};
 my $selected = $defaults->{selected};
 my $outformat = $defaults->{format};
 my $intarget;
+my $logs;
 
 #microassembler parameters:
 my $dfs_limit = $defaults->{pathlimit};
@@ -127,6 +128,7 @@ GetOptions(
 
 	# ouptut parameters
 	'intarget!'    => \$intarget,
+	'logs!'   	   => \$logs,
 	'outratio=f'   => \$outratio,
     
 
@@ -184,6 +186,8 @@ sub printParams {
 	print PFILE "-- file of selected coordinates: $selected\n";
 	if($intarget) { print PFILE "-- output variants in target? yes\n"; }
 	else { print PFILE "-- output variants in target? no\n"; }
+	if($logs) { print PFILE "-- keep log files? yes\n"; }
+	else { print PFILE "-- keep log files? no\n"; }
 	
 	close PFILE;
 }
@@ -763,6 +767,10 @@ sub parseLogFile {
 		}
 	}
 	
+	# remove log file
+	
+	if(!$logs) { runCmd("delete file", "rm $logFile.gz"); }
+	
 	#copy mutations to database on file
 	my %file_hash;
 	my $proc_dbm_obj = tie %file_hash, 'MLDBM::Sync', "$WORK/variants.$num.db", O_CREAT|O_RDWR, 0640;	
@@ -774,38 +782,6 @@ sub parseLogFile {
 	}
 	$proc_dbm_obj->UnLock;
 	
-	#$dbm_obj->Lock;
-	#foreach my $key (keys %tmp_hash) {
-	#	my $mut = $tmp_hash{$key};
-	#	
-	#	if( !(exists $hash->{$key}) ) {
-	#
-	#		$hash->{$key} = $mut;
-	#	}
-	#	else { # denovo already in the table
-	#		# update the coverage to the highest value found so far
-	#		my $mut_old = $hash->{$key};
-	#		if ($mut_old->{avgcov} < $mut->{avgcov}) { $mut_old->{avgcov} = $mut->{avgcov}; } # max avg coverage
-	#		if ($mut_old->{mincov} < $mut->{mincov}) { $mut_old->{mincov} = $mut->{mincov}; } # max min coverage
-	#		$hash->{$key} = $mut_old;
-	#	}
-	#}
-	
-	#update statistics in the database
-	#if( !(exists $hash->{stats}) ) { 
-	#	$hash->{stats} = $stats; 
-	#}
-	#else { 
-	#	my $old_stats = $hash->{stats}; 
-	#	$old_stats->{num_repeats} += $stats->{num_repeats};
-	#	$old_stats->{num_exceptions} += $stats->{num_exceptions};
-	#	$old_stats->{num_dfs_limit} += $stats->{num_dfs_limit};
-	#	$old_stats->{num_partial_align} += $stats->{num_partial_align};
-	#	$old_stats->{num_with_cycles} += $stats->{num_with_cycles};
-	#	$old_stats->{num_ok} += $stats->{num_ok};
-	#	$hash->{stats} = $old_stats;
-	#}
-	#$dbm_obj->UnLock;
 	
 	# write reference coverage to file	
 	my $outfile = "$WORK/refcov.$num.txt";

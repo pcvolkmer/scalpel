@@ -68,6 +68,7 @@ my $dfs_limit = $defaults->{pathlimit};
 
 # output arguments
 my $intarget;
+my $logs;
 my $min_cov = $defaults->{min_cov};
 my $max_cov = $defaults->{max_cov};
 my $min_chi2 = $defaults->{minchi2};
@@ -169,6 +170,7 @@ GetOptions(
 	'format=s'     => \$outformat,
 	'type=s'       => \$SVtype,
 	'intarget!'    => \$intarget,
+	'logs!'   	   => \$logs,
 
 ) or usage();
 
@@ -257,6 +259,7 @@ sub init()
 					"--coords $selected";
 				if($VERBOSE) { $command .= " --verbose"; }
 				if($intarget) { $command .= " --intarget"; }
+				if($logs) { $command .= " --logs"; }
 			
 				print STDERR "Command: $command\n" if($VERBOSE);
 				print STDERR "\n***START ANALYSIS***\n";
@@ -306,6 +309,7 @@ sub init()
 					"--coords $selected";
 				if($VERBOSE) { $command_main .= " --verbose"; }
 				if($intarget) { $command_main .= " --intarget"; }
+				if($logs) { $command_main .= " --logs"; }
 			
 				print STDERR "Command: $command_main\n" if($VERBOSE);
 				print STDERR "\n***MAIN ANALYSIS***\n";
@@ -361,6 +365,7 @@ sub init()
 					"--coords $outfile";
 				if($VERBOSE) { $command_val .= " --verbose"; }
 				if($intarget) { $command_val .= " --intarget"; }
+				if($logs) { $command_val .= " --logs"; }
 			
 				print STDERR "Command: $command_val\n" if($VERBOSE);
 				print STDERR "\n***VALIDATION PHASE***\n";
@@ -418,6 +423,7 @@ sub init()
 					"--coords $selected";	
 				if($VERBOSE) { $command_main .= " --verbose"; }
 				if($intarget) { $command_main .= " --intarget"; }
+				if($logs) { $command_main .= " --logs"; }
 			
 				print STDERR "Command: $command_main\n" if($VERBOSE);
 				print STDERR "\n***MAIN ANALYSIS***\n";
@@ -473,6 +479,7 @@ sub init()
 					"--coords $outfile";
 				if($VERBOSE) { $command_val .= " --verbose"; }	
 				if($intarget) { $command_val .= " --intarget"; }
+				if($logs) { $command_val .= " --logs"; }
 			
 				print STDERR "Command: $command_val\n" if($VERBOSE);
 				print STDERR "\n***VALIDATION PHASE***\n";

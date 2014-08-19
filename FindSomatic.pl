@@ -61,6 +61,7 @@ my $selected = $defaults->{selected};
 my $dfs_limit = $defaults->{pathlimit};
 my $outformat = $defaults->{format};
 my $intarget;
+my $logs;
 
 my $help = 0;
 my $VERBOSE = 0;
@@ -117,6 +118,7 @@ GetOptions(
 
 	# ouptut parameters
 	'intarget!'    => \$intarget,
+	'logs!'   	   => \$logs,
 	'outratio=f'   => \$outratio,
 
 ) or usageDenovo("FindDenovo.pl");
@@ -172,6 +174,8 @@ sub printParams {
 	print PFILE "-- output format for variants: $outformat\n";
 	if($intarget) { print PFILE "-- output variants in target? yes\n"; }
 	else { print PFILE "-- output variants in target? no\n"; }
+	if($logs) { print PFILE "-- keep log files? yes\n"; }
+	else { print PFILE "-- keep log files? no\n"; }
 	
 	close PFILE;
 }
@@ -291,6 +295,7 @@ sub callSVs {
 		"--format $outformat ".
 		"--cov2file";
 	if($intarget) { $command .= " --intarget"; }	
+	if($logs) { $command .= " --logs"; }	
 	if($VERBOSE) { $command .= " --verbose"; }
 
 	print STDERR "Command: $command\n" if($VERBOSE);
@@ -521,20 +526,24 @@ sub findSomaticMut {
 	$somatic_dbm_obj->Lock;
 	$common_dbm_obj->Lock;
 	foreach my $k (keys %tumorSVs) {
-		
+				
 		my $mut = $tumorSVs{$k};
 		
 		# parse bestState and update info
 		parseBestState($mut);
-		
+				
 		my $chr = $mut->{chr};
 		my $pos = $mut->{pos};
 		my $key = "$chr:$pos";
 		
-		# skip mutation if normal not sampled
-		next if (!exists $normalCov{$key});
-		next if ($normalCov{$key} < $min_cov); # min cov requirement
-				
+		#print STDERR "$k\t$mut->{bestState}\t$mut->{covState}\t$mut->{somatic}\t$normalCov{$key}\n";
+		
+		# skip mutation if reference for normal not sampled
+		my $totocov = $mut->{altcov} + $mut->{mincov};
+		next if ($totcov < $min_cov);
+		#next if (!exists $normalCov{$key});
+		#next if ($normalCov{$key} < $min_cov); # min cov requirement
+		
 		# compute inheritance
 		if($mut->{somatic} eq "yes") {
 			$somaticSVs{$k} = $mut;

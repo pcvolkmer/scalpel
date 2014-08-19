@@ -92,6 +92,7 @@ OPTIONS:
   Output:
     --format           : export mutations in selected format (annovar | vcf) [default $defaults{format}]
     --intarget         : export mutations only inside the target regions from the BED file
+    --logs             : keep log files
     --mincov <int>     : minimum coverage for exporting mutation to file [default $defaults{min_cov}]
     --outratio <float> : minimum coverage ratio for exporting mutation to file (default: $defaults{outratio})
 
@@ -147,6 +148,7 @@ OPTIONS:
   Output:
     --format           : export mutations in selected format (annovar | vcf) [default $defaults{format}]
     --intarget         : export mutations only inside the target regions from the BED file
+    --logs             : keep log files
     --mincov <int>     : minimum coverage for exporting mutation to file [default $defaults{min_cov}]
     --outratio <float> : minimum coverage ratio for exporting mutation to file (default: $defaults{outratio})
 
@@ -200,6 +202,7 @@ OPTIONS:
   Output:
     --format              : export mutations in selected format (annovar | vcf) [default $defaults{format}]
     --intarget            : export mutations only inside the target regions from the BED file
+    --logs                : keep log files
     --mincov <int>        : minimum coverage for exporting mutation to file [default $defaults{min_cov}]
     --outratio <float>    : minimum coverage ratio for exporting mutation to file (default: $defaults{outratio})
 

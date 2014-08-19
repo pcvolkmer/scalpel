@@ -333,6 +333,11 @@ sub loadDB {
 		# tie once to database, read/write as much as necessary
 	    $dbm_obj->Lock;
 
+		my $num_snp=0;
+		my $num_ins=0;
+		my $num_del=0;
+		my $num_tot=0;
+		
 		#make a copy of the DB hash for fast sorting
 		foreach my $key (keys %db) {
 		
@@ -346,13 +351,21 @@ sub loadDB {
 		
 			if($intarget) { # export if intarget true
 				next if(inTarget($mut, $exons) eq "false");
-			}		
+			}
 		
 			$hash->{$key} = $mut; 
+			
+			my $t = $mut->{type};
+			if($t eq "snp") { $num_snp++; }
+			if($t eq "ins") { $num_ins++; }
+			if($t eq "del") { $num_del++; }
+			$num_tot++;
 		}
 		$dbm_obj->UnLock;
+		
+		#print STDERR "[#SNPs: $num_snp | #Ins: $num_ins | #Del: $num_del | Tot: $num_tot]\n";
 	}
-	
+
 	return $out;
 }
 

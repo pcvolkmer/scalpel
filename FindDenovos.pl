@@ -62,6 +62,7 @@ my $MAX_PROCESSES = $defaults->{MAX_PROCESSES};
 my $selected = $defaults->{selected};
 my $outformat = $defaults->{format};
 my $intarget;
+my $logs;
 
 my $help = 0;
 my $VERBOSE = 0;
@@ -130,6 +131,7 @@ GetOptions(
 
 	# ouptut parameters
 	'intarget!'    => \$intarget,
+	'logs!'   	   => \$logs,
 	'outratio=f'   => \$outratio,
 
 ) or usageDenovo("FindDenovo.pl");
@@ -187,6 +189,8 @@ sub printParams {
 	print PFILE "-- output format for variants: $outformat\n";
 	if($intarget) { print PFILE "-- output variants in target? yes\n"; }
 	else { print PFILE "-- output variants in target? no\n"; }
+	if($logs) { print PFILE "-- keep log files? yes\n"; }
+	else { print PFILE "-- keep log files? no\n"; }
 	
 	close PFILE;
 }
@@ -289,6 +293,7 @@ sub callSVs {
 			"--format $outformat ".
 			"--cov2file";
 		if($intarget) { $command .= " --intarget"; }	
+		if($logs) { $command .= " --logs"; }	
 		if($VERBOSE) { $command .= " --verbose"; }
 	
 		print STDERR "Command: $command\n" if($VERBOSE);
