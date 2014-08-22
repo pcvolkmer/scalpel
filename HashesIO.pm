@@ -342,7 +342,7 @@ sub loadDB {
 			#if ($chr =~ /chr\w*(\w+)/) { $variants{$key}->{chr} = $1; }
 		
 			if($intarget) { # export if intarget true
-				next if(sget($mut, $exons) eq "false");
+				next if(inTarget($mut, $exons) eq "false");
 			}		
 		
 			$hash->{$key} = $mut; 
