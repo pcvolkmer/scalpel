@@ -351,8 +351,7 @@ sub loadDB {
 		
 			if($intarget) { # export if intarget true
 				next if(inTarget($mut, $exons) eq "false");
-			}
-		
+			}		
 			$hash->{$key} = $mut; 
 			
 			my $t = $mut->{type};
