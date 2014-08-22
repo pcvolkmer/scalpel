@@ -621,7 +621,8 @@ sub assemblyRegion {
 		"-m bamfile.bam ".
 		"-g $rgfile ".
 		" -r $refs_file ".
-		">& $outfile";
+		">$outfile 2>&1";
+		#">& $outfile"; # obsolete: not part of POSIX
 		
 	## run microassembler on each fasta file 
 	runCmd("microassembly", "$command"); 

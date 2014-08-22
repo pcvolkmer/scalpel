@@ -507,6 +507,29 @@ sub parseBestState {
 	}	
 }
 
+## parse covState and returns total
+## coverage at mutation locus
+##########################################
+sub getTotlCov {
+
+	my $sv = $_[0];
+	my $role = $_[1];
+	my $BS = $sv->{covState};
+	
+	my ($REF,$ALT,$OTH) = split("/",$BS);
+	my @R = split(" ", $REF); # reference
+	my @A = split(" ", $ALT); # alternative
+	my @O = split(" ", $OTH); # other
+
+	my $id = 0;	
+	if($role eq "normal") { $id = 0; }
+	if($role eq "tumor") { $id = 1; }	
+	
+	my $totCov = $R[$id] + $A[$id] + $O[$id];
+	
+	return $totCov;
+}
+
 
 ## find denovo events
 #####################################################
@@ -538,9 +561,12 @@ sub findSomaticMut {
 		
 		#print STDERR "$k\t$mut->{bestState}\t$mut->{covState}\t$mut->{somatic}\t$normalCov{$key}\n";
 		
-		# skip mutation if reference for normal not sampled
-		my $totocov = $mut->{altcov} + $mut->{mincov};
+		# skip mutation if normal not sampled
+		my $totcov = $mut->{altcov} + $mut->{mincov};
 		next if ($totcov < $min_cov);
+		
+		# skip mutation if reference for normal not sampled
+		next if (getTotlCov($mut,"normal") < $min_cov);
 		#next if (!exists $normalCov{$key});
 		#next if ($normalCov{$key} < $min_cov); # min cov requirement
 		

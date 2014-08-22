@@ -1,4 +1,11 @@
 ----------------------------------------------------------
+0.2.2 | Tue Aug 19 11:40:47 2014
+
+  * by default delete log files (to save disk space for WGS)
+  * added --log option to keep them if needed
+  * fix bug when export intarget mutations
+
+----------------------------------------------------------
 0.2.1 | Fri Aug 15 10:47:30 2014
 
   * new export tool to extract mutations from DB file
