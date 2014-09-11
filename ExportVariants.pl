@@ -337,7 +337,7 @@ sub printVariants {
 
 init();
 printParams() if ($VERBOSE);
-loadExonsBed("$bedfile", \%exons, 0, $VERBOSE);
+loadRegions("$bedfile", \%exons, 0, $VERBOSE);
 my $flag = loadDB("$dbfile", \%variants, \%exons, $intarget);
 if ($flag != -1) {
 	printVariants("$format");

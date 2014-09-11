@@ -12,7 +12,7 @@ package SequenceIO;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(loadCoordinates loadExonsBed loadGenomeFasta parseHeader saveReadGroup extractCoords extractCoordsDB);
+@EXPORT = qw(loadCoordinates loadRegions loadExonsBed loadGenomeFasta parseHeader saveReadGroup extractCoords extractCoordsDB);
 
 use strict;
 use warnings;
@@ -65,8 +65,7 @@ sub extractCoordsDB {
 	
 	print STDERR "Extract coordinates of candidates...";
 	
-	
-	loadExonsBed("$bedfile", \%exons, 0, 0);
+	loadRegions("$bedfile", \%exons, 0, 0);
 	loadDB("$dbfile", \%variants, \%exons, $intarget);
 	
 	open OUT, "> $out" or die "Can't open $out ($!)\n";
@@ -127,6 +126,45 @@ sub loadCoordinates {
 		#}
 	}
 	return $cntall_locs;
+}
+
+## load regions to process
+#####################################################
+sub loadRegions {
+	
+	my $bedfile = $_[0];
+	my $exons = $_[1];
+	my $radius = $_[2];
+	my $VERBOSE = $_[3];
+	
+	my $cnt = 0;
+	
+	if (-e "$bedfile") {
+		$cnt = loadExonsBed("$bedfile", $exons, $radius, $VERBOSE);
+	}
+	elsif ($bedfile =~ m/(\w+):(\d+)-(\d+)/) { # try to parse as region (e.g., 1-1234-4567)
+	
+		print STDERR "Loading targets region: $bedfile\n";
+	
+		#parse region
+		my ($chr,$interval) = split(':',$bedfile);
+		my ($start,$end) = split('-',$interval);
+
+		my $exon;
+		$exon->{chr} = $chr;
+		$exon->{start} = $start;
+		$exon->{end} = $end;
+
+		push @{$exons->{$chr}}, $exon;	
+		
+		$cnt = 1;
+	}
+	else {
+		print STDERR "Error: unrecognized string in --bed option: $bedfile\n";
+		exit;
+	}
+	
+	return $cnt;
 }
 
 ## load exons list

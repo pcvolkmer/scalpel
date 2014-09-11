@@ -70,7 +70,7 @@ OPTIONS:
 
   Required:
     --bam <BAM file>   : BAM file with the reference-aligned reads
-    --bed <BED file>   : BED file with list of exome-target coordinates
+    --bed <BED file>   : BED file with list of regions in sorted order or single region in format chr:star-end (example: 1:31656613-31656883)
     --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
@@ -128,7 +128,7 @@ OPTIONS:
     --mom <BAM file>   : mother BAM file
     --aff <BAM file>   : affected child BAM file
     --sib <BAM file>   : sibling BAM file
-    --bed <BED file>   : BED file with list of exome-target coordinates
+    --bed <BED file>   : BED file with list of regions in sorted order or single region in format chr:star-end (example: 1:31656613-31656883)
     --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
@@ -182,7 +182,7 @@ OPTIONS:
   Required:
     --normal <BAM file>   : normal BAM file
     --tumor  <BAM file>   : tumor BAM file
-    --bed    <BED file>   : BED file with list of exome-target coordinates
+    --bed    <BED file>   : BED file with list of regions in sorted order or single region in format chr:star-end (example: 1:31656613-31656883)
     --ref    <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
@@ -225,7 +225,7 @@ sub usageExport {
 my $name = $_[0];
 print STDERR <<END;
 
-usage: $name --db <file> --bed <BED file> [OPTIONS]
+usage: $name --db <file> --bed <file> [OPTIONS]
 
 OPTIONS:
 
@@ -234,7 +234,7 @@ OPTIONS:
 
   Required:
     --db <file>        : Database of mutations
-    --bed <file>       : BED file with list of exome-target coordinates
+    --bed <file>       : BED file with list of regions in sorted order or single region in format chr:star-end (example: 1:31656613-31656883)
   
   Optional:
     --format <text>    : output format for variants (annovar | vcf) [default $defaults{format}]

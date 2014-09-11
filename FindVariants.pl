@@ -208,7 +208,7 @@ sub run {
 		$cnt = loadCoordinates("$selected", \%exons, $VERBOSE);
 	}
 	else {
-		$cnt = loadExonsBed("$bedfile", \%exons, $radius, $VERBOSE);
+		$cnt = loadRegions("$bedfile", \%exons, $radius, $VERBOSE);
 	}
 	
 	if ($cnt == 0) {
