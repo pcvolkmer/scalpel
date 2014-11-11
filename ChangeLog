@@ -6,7 +6,7 @@
   * added samtool/bcftools source to the distribution
   * added support for region analysis (e.g., 2:132465-235435)
   * use samtools faidx to extract sequences < 10Kb (faster)
-  * set maximum coverage per region suing --maxregcov parameter
+  * set maximum coverage per region using --maxregcov parameter
 
 ----------------------------------------------------------
 0.2.2 | Tue Aug 22 2014
