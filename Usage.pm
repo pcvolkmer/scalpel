@@ -30,6 +30,7 @@ my %defaults = (
 	maxmismatch 		=> 3,
 	min_cov 			=> 5,
 	max_cov				=> 1000000,
+	max_reg_cov			=> 10000,
 	minchi2				=> 0,
 	maxchi2				=> 20,
 	outratio			=> 0.05,
@@ -40,7 +41,7 @@ my %defaults = (
 	pathlimit 			=> 100000,
 	format				=> "vcf",
 	SVtype				=> "indel",
-	version_num			=> "0.2.1(beta)",
+	version_num			=> "0.3.1(beta)",
 );
 
 #####################################################
@@ -80,7 +81,8 @@ OPTIONS:
     --covratio <float> : minimum coverage ratio for sequencing errors (default: $defaults{covratio})
     --radius <int>     : left and right extension (in base-pairs) [default $defaults{radius}]
     --window <int>     : window-size of the region to assemble (in base-pairs) [default $defaults{windowSize}]
-    --step <int>       : delta shift for the sliding window (in base-pairs) [default$defaults{delta}]
+    --maxregcov <int>  : maximum average coverage allowed per region [default $defaults{max_reg_cov}]
+    --step <int>       : delta shift for the sliding window (in base-pairs) [default $defaults{delta}]
     --mapscore <int>   : minimum mapping quality for selecting reads to assemble [default $defaults{map_qual}]
     --pathlimit <int>  : limit number of sequence paths [default $defaults{pathlimit}]
     --mismatches <int> : max number of mismatches in near-perfect repeat detection [default $defaults{maxmismatch}]
@@ -138,6 +140,7 @@ OPTIONS:
     --covratio <float> : minimum coverage ratio for sequencing errors (default: $defaults{covratio})
     --radius <int>     : left and right extension (in base-pairs) [default $defaults{radius}]
     --window <int>     : window-size of the region to assemble (in base-pairs) [default $defaults{windowSize}]
+    --maxregcov <int>  : maximum average coverage allowed per region [default $defaults{max_reg_cov}]
     --step <int>       : delta shift for the sliding window (in base-pairs) [default $defaults{delta}]
     --mapscore <int>   : minimum mapping quality for selecting reads to assemble [default $defaults{map_qual}]
     --mismatches <int> : max number of mismatches in near-perfect repeat detection [default $defaults{maxmismatch}]
@@ -151,6 +154,8 @@ OPTIONS:
     --logs             : keep log files
     --mincov <int>     : minimum coverage for exporting mutation to file [default $defaults{min_cov}]
     --outratio <float> : minimum coverage ratio for exporting mutation to file (default: $defaults{outratio})
+    --validate         : run validation step
+	
 
   Note 1: the list of de novo INDELs is saved in file: OUTDIR/denovos.*.indel.*
   where OUTDIR is the output directory selected with option "--dir" [default $defaults{WORK}]
@@ -192,6 +197,7 @@ OPTIONS:
     --covratio <float>    : minimum coverage ratio for sequencing errors (default: $defaults{covratio})
     --radius <int>        : left and right extension (in base-pairs) [default $defaults{radius}]
     --window <int>        : window-size of the region to assemble (in base-pairs) [default $defaults{windowSize}]
+    --maxregcov <int>     : maximum average coverage allowed per region [default $defaults{max_reg_cov}]
     --step <int>          : delta shift for the sliding window (in base-pairs) [default $defaults{delta}]
     --mapscore <int>      : minimum mapping quality for selecting reads to assemble [default $defaults{map_qual}]
     --mismatches <int>    : max number of mismatches in near-perfect repeat detection [default $defaults{maxmismatch}]
@@ -205,7 +211,8 @@ OPTIONS:
     --logs                : keep log files
     --mincov <int>        : minimum coverage for exporting mutation to file [default $defaults{min_cov}]
     --outratio <float>    : minimum coverage ratio for exporting mutation to file (default: $defaults{outratio})
-
+    --validate            : run validation step
+	
   Note 1: the list of somatic INDELs is saved in file: OUTDIR/somatic.*.indel.* 
   where OUTDIR is the output directory selected with option "--dir" [default $defaults{WORK}].
   

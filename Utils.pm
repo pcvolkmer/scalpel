@@ -12,8 +12,8 @@ package Utils;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(runCmd normalizeIndel uniq binarySearch inTarget bychrpos elapsedTime fisher_yates_shuffle);
-@EXPORT_OK = qw($findVariants $findDenovos $findSomatic $exportTool $bamtools);
+@EXPORT = qw(runCmd leftNormalize uniq binarySearch inTarget bychrpos elapsedTime fisher_yates_shuffle);
+@EXPORT_OK = qw($findVariants $findDenovos $findSomatic $exportTool $bamtools $samtools $bcftools);
 
 use strict;
 use warnings;
@@ -27,6 +27,8 @@ our $findDenovos  = "$Bin/FindDenovos.pl";
 our $findSomatic  = "$Bin/FindSomatic.pl";
 our $exportTool   = "$Bin/ExportVariants.pl";
 our $bamtools     = "$Bin/bamtools-2.3.0/bin/bamtools";
+our $samtools     = "/nethome/gnarzisi/software/samtools-1.1/samtools";
+our $bcftools     = "/nethome/gnarzisi/software/bcftools-1.1/bcftools";
 
 # Run system command 
 #####################################################
@@ -58,83 +60,100 @@ sub runCmd
 
 ## Normalize indel location to leftmost position
 #####################################################
-sub normalizeIndel {
-	my $denovo  = ${$_[0]} ;
+sub leftNormalize {
+	my $indel = ${$_[0]};
 	my $delta = $_[1];
-	my $direction = $_[2];
-	my $genome = $_[3];	
+	my $REF = $_[2];
 	
-	my $pos = $denovo->{pos};
-	my $type = $denovo->{type};
-	my $chr = $denovo->{chr};
+	my $pos = $indel->{pos};
+	my $type = $indel->{type};
+	my $chr = $indel->{chr};
+	my $indel_len = $indel->{len};
 
 	## extract sequence around indel from reference file
-	#$pos = $pos+1; # convert from 0-based to 1-based coordinate system
-	my $l = $pos-$delta;
- 	my $r = $pos+$delta;
+	#pos = $pos+1; # convert from 0-based to 1-based coordinate system
+	my $l = $pos-$indel_len-$delta;
+ 	my $r = $pos+$indel_len+$delta;
 	#print "samtools faidx $REF $chr:$l-$r | awk '\$0 ~ /^>/' \n";
-	#my $reference = readpipe( "$samtools faidx $REF $chr:$l-$r | awk '\$0 !~ /^>/'" ); # 0-based coordinate system
-	my $reference = substr($genome->{$chr}->{seq}, $l-1, $r-$l+1);
-	#print "samtools faidx $REF $chr:$l-$r\n";
-
- 	my $p = $delta;
-	my $indel_len = $denovo->{len};
+	my $reference = readpipe( "$samtools faidx $REF $chr:$l-$r | awk '\$0 !~ /^>/'" ); # 0-based coordinate system
+	$reference=~s/\R//g; #remove newlines
+	#my $reference = substr($genome->{$chr}->{seq}, $l-1, $r-$l+1);
+	#print "samtools faidx $REF $chr:$L-$R\n";
+	#print STDERR "$reference\n";
+ 	my $p = $indel_len+$delta;
 	my $new_pos = $pos;
-	if( $type eq "del") { # deletion
+	if($type eq "del") { # deletion
 		my $left_seq  = substr($reference, 0, $p);
 		my $right_seq = substr($reference, $p+$indel_len);
 		my $true_indel_seq = $left_seq . $right_seq;
 		$new_pos = $l+$p;
-		$denovo->{ref} = substr($reference, $p, $indel_len);
-
-		## reposition the candidate variant to a canonical (leftmost/rightmost) position
+		$indel->{ref} = substr($reference, $p, $indel_len);
+		
+		## reposition the candidate variant to a canonical (leftmost) position
 		my $left_hyplotype;
 		my $right_hyplotype;
 		my $new_indel_seq;
-		for (my $i = $p-1; $i >= 0; $i--) {
+		for (my $sft = 1; $sft <= $delta; $sft++) {
+			my $i = $p-$sft;
 			$left_hyplotype  = substr($reference, 0, $i);
 		  	$right_hyplotype = substr($reference, $i+$indel_len);
 		  	$new_indel_seq = $left_hyplotype . $right_hyplotype;
 		  	#print "$true_indel_seq";
 		    #print "$new_indel_seq";
 		   	if ($true_indel_seq eq $new_indel_seq) {
-		   		#print "Repositioning!\n";
+				#print "Repositioning!\n";
 		  		$new_pos = $l+$i; # repositioning!
-		  		$denovo->{ref} = substr($reference, $i, $indel_len);
+		  		$indel->{ref} = substr($reference, $i, $indel_len);
 		  	}
 		}
-		$denovo->{seq} = ( '-' x $indel_len );
+		
+		if($new_pos != $pos) {
+			#$num_indels_repositioned++;
+			my $shift = $pos - $new_pos + 1;
+			#print STDERR "Deletion ($chr:$pos) left-shifted of $shift bp\n";
+		}	
+		
+		$indel->{seq} = ('-' x $indel_len);
+		$indel->{pos} = $new_pos;
+		#$indel->{end} = $indel->{start} + $indel->{len} - 1;
 	}
-	# Simulator behaviour: when deleting
-	# a string it starts deleting at position i, while, when inserting a
-	# string, it appends it starting at position i+1.
-	elsif( $type eq "ins") {
+	elsif($type eq "ins") {
 	  	my $left_seq  = substr($reference, 0, $p);
 		my $right_seq = substr($reference, $p);
-		my $true_indel_seq = $left_seq . $denovo->{seq} . $right_seq;
+		my $true_indel_seq = $left_seq . $indel->{seq} . $right_seq;
 		$new_pos = $l+$p;
-
-		## reposition the candidate variant to a canonical (leftmost/rightmost) position
+		
+		## reposition the candidate variant to a canonical (leftmost) position
 		my $left_hyplotype;
 		my $right_hyplotype;
 		my $new_indel_seq;
 		my $ins;
-		for (my $i = $p-1; $i >= 0; $i--) {
+		for (my $sft = 1; $sft <= $delta; $sft++) {
+			my $i = $p-$sft;
 			$left_hyplotype  = substr($reference, 0, $i);
 		  	$right_hyplotype = substr($reference, $i);
 		  	$ins = substr($true_indel_seq, $i, $indel_len);
 		  	$new_indel_seq = $left_hyplotype . $ins . $right_hyplotype;
+				
 		  	#print "$true_indel_seq";
 		    #print "$new_indel_seq";
 		  	if ($true_indel_seq eq $new_indel_seq) {
 		  		#print "Repositioning!\n";
 		  		$new_pos = $l+$i; # repositioning!
-		  		$denovo->{seq} = $ins;
+		  		$indel->{seq} = $ins;
 		  	}
 		}
-		$denovo->{ref} = ( '-' x $indel_len );
+		
+		if($new_pos != $pos) {
+			#$num_indels_repositioned++;
+			my $shift = $pos - $new_pos + 1;
+			#print STDERR "Insertion ($chr:$pos) left-shifted of $shift bp\n";
+		}
+		
+		$indel->{ref} = ('-' x $indel_len);
+		$indel->{pos} = $new_pos;
+		#$indel->{end} = $indel->{start};
 	}
-	$denovo->{pos} = $new_pos;
 }
 
 ## return unique elements of input list

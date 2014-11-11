@@ -12,7 +12,7 @@ package SequenceIO;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(loadCoordinates loadRegions loadExonsBed loadGenomeFasta parseHeader saveReadGroup extractCoords extractCoordsDB);
+@EXPORT = qw(loadCoordinates loadRegions loadVCF loadExonsBed loadGenomeFasta parseHeader saveReadGroup extractCoords extractCoordsDB);
 
 use strict;
 use warnings;
@@ -20,6 +20,7 @@ use FindBin qw($Bin);
 use lib $Bin; # add $Bin directory to @INC
 use Utils;
 use HashesIO;
+use Digest::MD5 qw(md5_hex);
 
 my $bamtools = "$Bin/bamtools-2.3.0/bin/bamtools";
 
@@ -142,7 +143,7 @@ sub loadRegions {
 	if (-e "$bedfile") {
 		$cnt = loadExonsBed("$bedfile", $exons, $radius, $VERBOSE);
 	}
-	elsif ($bedfile =~ m/(\w+):(\d+)-(\d+)/) { # try to parse as region (e.g., 1-1234-4567)
+	elsif ($bedfile =~ m/(\w+):(\d+)-(\d+)/) { # try to parse as region (e.g., 1:1234-4567)
 	
 		print STDERR "Loading targets region: $bedfile\n";
 	
@@ -155,7 +156,7 @@ sub loadRegions {
 		$exon->{start} = $start;
 		$exon->{end} = $end;
 
-		push @{$exons->{$chr}}, $exon;	
+		push @{$exons->{$chr}}, $exon;
 		
 		$cnt = 1;
 	}
@@ -243,6 +244,102 @@ sub loadExonsBed {
 	return $cntall_exons;
 }
 
+# load VCF file
+##########################################
+sub loadVCF {
+    
+    print STDERR "Loading mutations from VCF file...";
+    
+    my $file = $_[0];
+	my $hash = $_[1];
+	my $REF  = $_[2];
+    
+    open VCF, "< $file" or die "Can't open $file ($!)\n";
+
+	my $cnt = 0;
+    my $header = "";
+    while ( <VCF> ) {
+        chomp;
+        #print "$_\n";
+        if($_ =~ m/^#/) { 
+			$header = $_;
+            #print "$header\n";
+        }
+        else { 
+			#2       154110840       .       ATTTTTT ATTTTT  3.45209 .       INDEL;IDV=1;IMF=0.0909091;DP=11;VDB=0.135767;SGB=-0.379885;MQSB=0.763675;MQ0F=0;AC=0;AN=2;DP4=6,4,1,0;MQ=56     GT:PL   0/0:0,17,82
+            my @fields = split("\t", $_);
+			my $chr = $fields[0];
+			my $pos = $fields[1];
+			my $ref = $fields[3];
+			my $alts = $fields[4];
+			
+			my @A = split(',', $alts);
+							
+			foreach (@A) { 
+				#$cnt++;
+				
+				my $alt = $_;		
+					
+				my $type;
+				my $newref;
+				my $newalt;
+				my $len;
+				if(length($ref)==1 && length($alt)==1 ) {
+					$type = "snp";
+					$len = 1;
+					$newref = $ref;
+				 	$newalt = $alt;
+				}
+				elsif(length($ref) > length($alt)) {
+					$type = "del";
+					#my $idx = index($ref, $alt);
+					#$newref = substr($ref,length($alt));
+					#$len = length($newref);
+					$len = length($ref)-length($alt);
+					$newalt = ('-' x $len);
+					$newref = substr($ref,1,$len);
+					$pos+=1;
+				}
+				elsif(length($ref) < length($alt)) {
+					$type = "ins";
+					#my $idx = index($alt, $ref, 1);
+					#$newalt = substr($alt,length($ref));
+					#$len = length($newalt);
+					$len = length($alt)-length($ref);
+					$newalt = substr($alt,1,$len);
+					$newref = ('-' x $len);
+					$pos+=1;
+				}
+			
+				my $mut;
+				$mut->{chr}  = $chr;
+				$mut->{pos}  = $pos;
+				$mut->{ref}  = $newref;
+				$mut->{seq}  = $newalt;
+				$mut->{type} = $type;
+				$mut->{len}  = $len;
+
+				leftNormalize(\$mut, 300, $REF);
+				#print STDERR "$mut->{chr}\t$mut->{pos}\t$mut->{ref}\t$mut->{seq}\t$mut->{type}\t$mut->{len}\n";
+			
+				my $ref_encoded = md5_hex($mut->{ref});
+				my $qry_encoded = md5_hex($mut->{seq});
+			
+				my $key = sprintf("%s:%d:%s:%d:%s:%s", $mut->{chr}, $mut->{pos}, $mut->{type}, $mut->{len}, $ref_encoded, $qry_encoded);
+				#print STDERR "$key\n";
+			
+				if( !(exists $hash->{$key}) ) {
+					$hash->{$key} = $mut;
+					$cnt++;
+				}
+			}
+        }
+    }
+    close VCF;
+
+	print STDERR "$cnt mutaations.\n";
+}
+
 # load the genome in fasta format
 ##########################################
 sub loadGenomeFasta {
@@ -251,7 +348,7 @@ sub loadGenomeFasta {
     
     my $file = $_[0];
     my $genome = $_[1];
-    
+	    
     open FASTAFILE, "< $file" or die "Can't open $file ($!)\n";
 
     my $header = "";

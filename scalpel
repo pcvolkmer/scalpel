@@ -56,6 +56,7 @@ my $cov_threshold = $defaults->{cov_threshold};
 my $tip_cov_threshold = $defaults->{tip_cov_threshold};
 my $radius = $defaults->{radius};
 my $windowSize = $defaults->{windowSize};
+my $max_reg_cov = $defaults->{max_reg_cov};
 my $delta = $defaults->{delta};
 my $map_qual = $defaults->{map_qual};
 my $maxmismatch = $defaults->{maxmismatch};
@@ -69,6 +70,7 @@ my $dfs_limit = $defaults->{pathlimit};
 # output arguments
 my $intarget;
 my $logs;
+my $validate;
 my $min_cov = $defaults->{min_cov};
 my $max_cov = $defaults->{max_cov};
 my $min_chi2 = $defaults->{minchi2};
@@ -159,6 +161,7 @@ GetOptions(
     'outratio=f'   => \$outratio,
     'radius=i'     => \$radius,
     'window=i'     => \$windowSize,
+    'maxregcov=i'  => \$max_reg_cov,
     'step=i'       => \$delta,
     'mapscore=i'   => \$map_qual,
     'mismatches=i' => \$maxmismatch,
@@ -171,6 +174,7 @@ GetOptions(
 	'type=s'       => \$SVtype,
 	'intarget!'    => \$intarget,
 	'logs!'   	   => \$logs,
+	'validate!'    => \$validate,
 
 ) or usage();
 
@@ -247,8 +251,9 @@ sub init()
 					"--mincov $min_cov ".
 					"--covratio $covratio ".
 					"--outratio $outratio ".
-					"--radius $radius ". 
-					"--window $windowSize ". 
+					"--radius $radius ".
+					"--window $windowSize ".
+					"--maxregcov $max_reg_cov ".
 					"--step $delta ".
 					"--mapscore $map_qual ".
 					"--mismatches $maxmismatch ".
@@ -298,8 +303,9 @@ sub init()
 					"--mincov $min_cov ".
 					"--covratio $covratio ".
 					"--outratio $outratio ".
-					"--radius $radius ". 
-					"--window $windowSize ". 
+					"--radius $radius ".
+					"--window $windowSize ".
+					"--maxregcov $max_reg_cov ".
 					"--step $delta ".
 					"--mapscore $map_qual ".
 					"--mismatches $maxmismatch ".
@@ -310,73 +316,78 @@ sub init()
 				if($VERBOSE) { $command_main .= " --verbose"; }
 				if($intarget) { $command_main .= " --intarget"; }
 				if($logs) { $command_main .= " --logs"; }
-			
+				
 				print STDERR "Command: $command_main\n" if($VERBOSE);
 				print STDERR "\n***MAIN ANALYSIS***\n";
 				runCmd("FindDenovos", $command_main);
 			
-				# extract coordinates of candidate mutation
-				#my $infile = "";
-				#if ($outformat eq "annovar") { $infile = "$DIR_main/denovo.${min_cov}x.indel.annovar"; }
-				#elsif ($outformat eq "vcf") { $infile  = "$DIR_main/denovo.${min_cov}x.indel.vcf"; }				
-				#my $outfile = "$DIR_main/coords.txt";
-				#extractCoords($infile, $outfile);
+				if($validate) {
+			
+					# extract coordinates of candidate mutation
+					#my $infile = "";
+					#if ($outformat eq "annovar") { $infile = "$DIR_main/denovo.${min_cov}x.indel.annovar"; }
+					#elsif ($outformat eq "vcf") { $infile  = "$DIR_main/denovo.${min_cov}x.indel.vcf"; }				
+					#my $outfile = "$DIR_main/coords.txt";
+					#extractCoords($infile, $outfile);
 				
-				my $dbfile = "$DIR_main/denovos.db";
-				my $outfile = "$DIR_main/coords.txt";
-				my $num_calls = extractCoordsDB($dbfile, $BEDFILE, $intarget, $outfile);				
-				if ($num_calls == 0) {
-					print STDERR "No candidate calls to validate. Nothing to do! exit.\n";
-					exit;
-				}
+					my $dbfile = "$DIR_main/denovos.db";
+					my $outfile = "$DIR_main/coords.txt";
+					my $num_calls = extractCoordsDB($dbfile, $BEDFILE, $intarget, $outfile);				
+					if ($num_calls == 0) {
+						print STDERR "No candidate calls to validate. Nothing to do! exit.\n";
+						exit;
+					}
 			
-				# adjust parameters for validation step (max sensitivity)
-				$kmer = 10;
-				$map_qual = 0;
-				$cov_threshold = 1;
-				$tip_cov_threshold = 0;
-				$windowSize = 300;
-				$radius = 150;
-				$covratio = 0.0;
+					# adjust parameters for validation step (max sensitivity)
+					$kmer = 10;
+					$map_qual = 0;
+					$cov_threshold = 3;
+					$tip_cov_threshold = 1;
+					$radius = floor($windowSize/2);
+					$covratio = 0.0;
+					$dfs_limit = 1000000;
 			
-				# run validation of candidates
-				my $DIR_val = "$ABS_WORK/validation";
-				my $command_val = "$findDenovos ".
-					"--dad $BAMDAD ".
-					"--mom $BAMMOM ".
-					"--aff $BAMAFF ".
-					"--sib $BAMSIB ".
-					"--bed $BEDFILE ".
-					"--ref $REF ".
-					"--kmer $kmer ". 
-					"--covthr $cov_threshold ". 
-					"--lowcov $tip_cov_threshold ".
-					"--mincov $min_cov ".
-					"--covratio $covratio ".
-					"--outratio $outratio ".
-					"--radius $radius ". 
-					"--window $windowSize ". 
-					"--step $delta ".
-					"--mapscore $map_qual ".
-					"--mismatches $maxmismatch ".
-					"--dir $DIR_val ".
-					"--numprocs $MAX_PROCESSES ".
-					"--format $outformat ".
-					"--coords $outfile";
-				if($VERBOSE) { $command_val .= " --verbose"; }
-				if($intarget) { $command_val .= " --intarget"; }
-				if($logs) { $command_val .= " --logs"; }
+					# run validation of candidates
+					my $DIR_val = "$ABS_WORK/validation";
+					my $command_val = "$findDenovos ".
+						"--dad $BAMDAD ".
+						"--mom $BAMMOM ".
+						"--aff $BAMAFF ".
+						"--sib $BAMSIB ".
+						"--bed $BEDFILE ".
+						"--ref $REF ".
+						"--kmer $kmer ". 
+						"--covthr $cov_threshold ". 
+						"--lowcov $tip_cov_threshold ".
+						"--mincov $min_cov ".
+						"--covratio $covratio ".
+						"--outratio $outratio ".
+						"--radius $radius ".
+						"--window $windowSize ".
+						"--maxregcov $max_reg_cov ".
+						"--step $delta ".
+						"--mapscore $map_qual ".
+						"--mismatches $maxmismatch ".
+						"--dir $DIR_val ".
+						"--numprocs $MAX_PROCESSES ".
+						"--format $outformat ".
+						"--coords $outfile";
+					if($VERBOSE) { $command_val .= " --verbose"; }
+					if($intarget) { $command_val .= " --intarget"; }
+					if($logs) { $command_val .= " --logs"; }
+					$command_val .= " --STcalling";
 			
-				print STDERR "Command: $command_val\n" if($VERBOSE);
-				print STDERR "\n***VALIDATION PHASE***\n";
-				runCmd("FindDenovos", $command_val);
+					print STDERR "Command: $command_val\n" if($VERBOSE);
+					print STDERR "\n***VALIDATION PHASE***\n";
+					runCmd("FindDenovos", $command_val);
 				
-				#copy denovo indels to main directory
-				if ($outformat eq "annovar") {
-					copy("$DIR_val/denovo.${min_cov}x.indel.annovar","$ABS_WORK/denovo.${min_cov}x.indel.annovar") or die "Copy failed: $!";
-				}
-				elsif ($outformat eq "vcf") {				
-					copy("$DIR_val/denovo.${min_cov}x.indel.vcf","$ABS_WORK/denovo.${min_cov}x.indel.vcf") or die "Copy failed: $!";
+					#copy denovo indels to main directory
+					if ($outformat eq "annovar") {
+						copy("$DIR_val/denovo.${min_cov}x.indel.annovar","$ABS_WORK/denovo.${min_cov}x.indel.annovar") or die "Copy failed: $!";
+					}
+					elsif ($outformat eq "vcf") {				
+						copy("$DIR_val/denovo.${min_cov}x.indel.vcf","$ABS_WORK/denovo.${min_cov}x.indel.vcf") or die "Copy failed: $!";
+					}
 				}
 			}
 		}
@@ -412,8 +423,9 @@ sub init()
 					"--mincov $min_cov ".
 					"--covratio $covratio ".
 					"--outratio $outratio ".
-					"--radius $radius ". 
-					"--window $windowSize ". 
+					"--radius $radius ".
+					"--window $windowSize ".
+					"--maxregcov $max_reg_cov ".
 					"--step $delta ".
 					"--mapscore $map_qual ".
 					"--mismatches $maxmismatch ".
@@ -429,68 +441,73 @@ sub init()
 				print STDERR "\n***MAIN ANALYSIS***\n";
 				runCmd("FindSomatic", $command_main);
 			
-				# extract coordinates of candidate mutation
-				#my $infile = "";
-				#if ($outformat eq "annovar") { $infile = "$DIR_main/somatic.${min_cov}x.indel.annovar"; }
-				#elsif ($outformat eq "vcf") { $infile  = "$DIR_main/somatic.${min_cov}x.indel.vcf"; }
-				#my $outfile = "$DIR_main/coords.txt";
-				#extractCoords($infile, $outfile);
+				if($validate) {
+			
+					# extract coordinates of candidate mutation
+					#my $infile = "";
+					#if ($outformat eq "annovar") { $infile = "$DIR_main/somatic.${min_cov}x.indel.annovar"; }
+					#elsif ($outformat eq "vcf") { $infile  = "$DIR_main/somatic.${min_cov}x.indel.vcf"; }
+					#my $outfile = "$DIR_main/coords.txt";
+					#extractCoords($infile, $outfile);
 
-				my $dbfile = "$DIR_main/somatic.db";
-				my $outfile = "$DIR_main/coords.txt";
+					my $dbfile = "$DIR_main/somatic.db";
+					my $outfile = "$DIR_main/coords.txt";
 				
-				my $num_calls = extractCoordsDB($dbfile, $BEDFILE, $intarget, $outfile);
-				if ($num_calls == 0) {
-					print STDERR "No candidate calls to validate. Nothing to do! exit.\n";
-					exit;
-				}
+					my $num_calls = extractCoordsDB($dbfile, $BEDFILE, $intarget, $outfile);
+					if ($num_calls == 0) {
+						print STDERR "No candidate calls to validate. Nothing to do! exit.\n";
+						exit;
+					}
 			
-				# adjust parameters for validation step (max sensitivity)
-				$kmer = 10;
-				$map_qual = 0;
-				$cov_threshold = 1;
-				$tip_cov_threshold = 0;
-				$windowSize = 300;
-				$radius = 150;
-				$covratio = 0.0;
-				$dfs_limit = 1000000;
+					# adjust parameters for validation step (max sensitivity)
+					$kmer = 10;
+					$map_qual = 0;
+					$cov_threshold = 3;
+					$tip_cov_threshold = 1;
+					#$windowSize = 300;
+					$radius = floor($windowSize/2);
+					$covratio = 0.0;
+					$dfs_limit = 1000000;
 			
-				# run validation of candidates
-				my $DIR_val = "$ABS_WORK/validation";
-				my $command_val = "$findSomatic ".
-					"--normal $BAMNORMAL ".
-					"--tumor $BAMTUMOR ".
-					"--bed $BEDFILE ".
-					"--ref $REF ".
-					"--kmer $kmer ". 
-					"--covthr $cov_threshold ". 
-					"--lowcov $tip_cov_threshold ".
-					"--mincov $min_cov ".
-					"--covratio $covratio ".
-					"--outratio $outratio ".
-					"--radius $radius ". 
-					"--window $windowSize ". 
-					"--step $delta ".
-					"--mapscore $map_qual ".
-					"--mismatches $maxmismatch ".
-					"--dir $DIR_val ".
-					"--numprocs $MAX_PROCESSES ".
-					"--format $outformat ".
-					"--coords $outfile";
-				if($VERBOSE) { $command_val .= " --verbose"; }	
-				if($intarget) { $command_val .= " --intarget"; }
-				if($logs) { $command_val .= " --logs"; }
+					# run validation of candidates
+					my $DIR_val = "$ABS_WORK/validation";
+					my $command_val = "$findSomatic ".
+						"--normal $BAMNORMAL ".
+						"--tumor $BAMTUMOR ".
+						"--bed $BEDFILE ".
+						"--ref $REF ".
+						"--kmer $kmer ". 
+						"--covthr $cov_threshold ". 
+						"--lowcov $tip_cov_threshold ".
+						"--mincov $min_cov ".
+						"--covratio $covratio ".
+						"--outratio $outratio ".
+						"--radius $radius ".
+						"--window $windowSize ".
+						"--maxregcov $max_reg_cov ".
+						"--step $delta ".
+						"--mapscore $map_qual ".
+						"--mismatches $maxmismatch ".
+						"--dir $DIR_val ".
+						"--numprocs $MAX_PROCESSES ".
+						"--format $outformat ".
+						"--coords $outfile";
+					if($VERBOSE) { $command_val .= " --verbose"; }	
+					if($intarget) { $command_val .= " --intarget"; }
+					if($logs) { $command_val .= " --logs"; }
+					$command_val .= " --STcalling";
 			
-				print STDERR "Command: $command_val\n" if($VERBOSE);
-				print STDERR "\n***VALIDATION PHASE***\n";
-				runCmd("FindSomatic", $command_val);
+					print STDERR "Command: $command_val\n" if($VERBOSE);
+					print STDERR "\n***VALIDATION PHASE***\n";
+					runCmd("FindSomatic", $command_val);
 			
-				#copy somatic indels to main directory
-				if ($outformat eq "annovar") {
-					copy("$DIR_val/somatic.${min_cov}x.indel.annovar","$ABS_WORK/somatic.${min_cov}x.indel.annovar") or die "Copy failed: $!";
-				}
-				elsif ($outformat eq "vcf") {				
-					copy("$DIR_val/somatic.${min_cov}x.indel.vcf","$ABS_WORK/somatic.${min_cov}x.indel.vcf") or die "Copy failed: $!";
+					#copy somatic indels to main directory
+					if ($outformat eq "annovar") {
+						copy("$DIR_val/somatic.${min_cov}x.indel.annovar","$ABS_WORK/somatic.${min_cov}x.indel.annovar") or die "Copy failed: $!";
+					}
+					elsif ($outformat eq "vcf") {				
+						copy("$DIR_val/somatic.${min_cov}x.indel.vcf","$ABS_WORK/somatic.${min_cov}x.indel.vcf") or die "Copy failed: $!";
+					}
 				}
 			}
 		}

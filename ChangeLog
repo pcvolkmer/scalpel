@@ -1,12 +1,22 @@
 ----------------------------------------------------------
-0.2.2 | Tue Aug 22 11:40:47 2014
+0.3.1 | Tue Nov 11 2014
+
+  * increased specificity for somatic and denovo calls
+  * call indel directly from alignment using samtools (validation mode)
+  * added samtool/bcftools source to the distribution
+  * added support for region analysis (e.g., 2:132465-235435)
+  * use samtools faidx to extract sequences < 10Kb (faster)
+  * set maximum coverage per region suing --maxregcov parameter
+
+----------------------------------------------------------
+0.2.2 | Tue Aug 22 2014
 
   * by default delete log files (to save disk space for WGS)
   * added --log option to keep them if needed
   * fix bug when export intarget mutations
 
 ----------------------------------------------------------
-0.2.1 | Fri Aug 15 10:47:30 2014
+0.2.1 | Fri Aug 15 2014
 
   * new export tool to extract mutations from DB file
   * improved speed for whole-genome studies
@@ -14,6 +24,6 @@
   * added support for VCF output format
 
 ----------------------------------------------------------
-0.2.1 | Wed Dec 11 15:11:21 2013
+0.2.1 | Wed Dec 11 2013
 
   * first public (beta) release

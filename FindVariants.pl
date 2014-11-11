@@ -17,7 +17,7 @@ use POSIX;
 use FindBin qw($Bin);
 use lib $Bin; # add $Bin directory to @INC
 use Usage;
-use Utils;
+use Utils qw(:DEFAULT $findVariants $findDenovos $findSomatic $exportTool $bamtools $samtools $bcftools);
 use SequenceIO;
 use HashesIO;
 use Parallel::ForkManager;
@@ -53,6 +53,7 @@ my $map_qual = $defaults->{map_qual};
 my $maxmismatch = $defaults->{maxmismatch};
 my $min_cov = $defaults->{min_cov};
 my $max_cov = $defaults->{max_cov};
+my $max_reg_cov = $defaults->{max_reg_cov};
 my $covratio = $defaults->{covratio};
 my $outratio = $defaults->{outratio};
 my $WORK  = $defaults->{WORK};
@@ -71,12 +72,10 @@ my $maxKmer = 90;
 my $help = 0;
 my $VERBOSE = 0;
 my $COV2FILE = 0;
+my $USEFAIDX = 0;
 
 # programs via absolute path
-#my $samtools = "samtools";
 my $microassembler = "$Bin/Microassembler/Microassembler";
-my $exportTool = "$Bin/ExportVariants.pl";
-my $bamtools = "$Bin/bamtools-2.3.0/bin/bamtools";
 
 my $rgfile = "readgroups.txt";
 
@@ -116,6 +115,7 @@ GetOptions(
     'covratio=f'   => \$covratio,
     'radius=i'     => \$radius,
     'window=i'     => \$windowSize,
+    'maxregcov=i'  => \$max_reg_cov,	
     'step=i'       => \$delta,
     'mapscore=i'   => \$map_qual,
     'mismatches=i' => \$maxmismatch,
@@ -169,6 +169,7 @@ sub printParams {
 	print PFILE "-- low coverage threshold: $tip_cov_threshold\n";
 	print PFILE "-- size (bp) of the left and right extensions (radius): $radius\n";
 	print PFILE "-- window-size size (bp): $windowSize\n";
+	print PFILE "-- max coverage per region: $max_reg_cov\n";
 	print PFILE "-- step size (bp): $delta\n";
 	print PFILE "-- minimum mapping quality: $map_qual\n";
 	print PFILE "-- minimum coverage for exporting mutation: $min_cov\n";
@@ -216,8 +217,29 @@ sub run {
 		exit;
 	}
 	
+	# decide if loading genome from fasta or use samtools faidx
+	if (-e "$bedfile") { $USEFAIDX = 0; }
+	elsif ($bedfile =~ m/(\w+):(\d+)-(\d+)/) { 
+		#parse region
+		my ($chr,$interval) = split(':',$bedfile);
+		my ($start,$end) = split('-',$interval);
+		
+		# use samtools faidx for regions smaller than 1Mb 
+		# to speed up loading of the sequences
+		if( ($end-$start+1) < 10000) { 
+			print STDERR "INFO: Region $bedfile is < 10Kb; Using samtools faidx to extract sequences.\n";
+			$USEFAIDX = 1;
+		}
+		else { $USEFAIDX = 0; } 
+	}
+	
+	#if( ($cnt > 1) || () ) { $USEFAIDX = 0; }
+	#else { $USEFAIDX = 1; }
+	
 	#load genome from fasta file
-	loadGenomeFasta($REF, \%genome);
+	if($USEFAIDX == 0) {
+		loadGenomeFasta($REF, \%genome);
+	}
 	
 	if (-e "$fdir/variants.db.dir") { runCmd("remove database files", "rm $fdir/variants.db.*"); }	
 	$variants_dbm_obj = tie %variants, 'MLDBM::Sync', "$fdir/variants.db", O_CREAT|O_RDWR, 0640;	
@@ -454,9 +476,16 @@ sub schedule_jobs {
 			#if ($chr =~ /^chr/) { $chrom = substr($chr,3); }
 
 			print FILE ">$chr:$left-$right\n";
-			die "Undefined sequence ($chr)\n" if (!exists($genome{$chr}));
-			my $seq = substr($genome{$chr}->{seq}, $left-1, $right-$left+1);
-			#my $seq = substr($genome{$chr}->{seq},$exonstart, $exonend-$exonstart+1);
+			my $seq = "";
+			if($USEFAIDX == 0) {
+				die "Undefined sequence ($chr)\n" if (!exists($genome{$chr}));
+				$seq = substr($genome{$chr}->{seq}, $left-1, $right-$left+1);
+			}
+			elsif ($USEFAIDX == 1) {		
+				$seq = readpipe( "$samtools faidx $REF $chr:$left-$right | awk '\$0 !~ /^>/'" ); # 0-based coordinate system
+				$seq=~s/\R//g; #remove newlines
+			}
+			
 			for(my $i=0; $i<length($seq); $i+=80) {
 				my $str = substr($seq,$i,80);
 				print FILE "$str\n";
@@ -615,8 +644,9 @@ sub assemblyRegion {
 		"-l $max_tip_len ". 
 		"-c $cov_threshold ".
 		"-x $covratio ".
-		"-d $tip_cov_threshold ". 
-		"-b $map_qual ". 
+		"-d $tip_cov_threshold ".
+		"-u $max_reg_cov ".
+		"-b $map_qual ".
 		"-p $PREFIX ".
 		"-m bamfile.bam ".
 		"-g $rgfile ".

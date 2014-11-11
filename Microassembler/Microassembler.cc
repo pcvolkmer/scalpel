@@ -28,6 +28,7 @@ void Microassembler::printConfiguration(ostream & out)
 	out << "MIN_QV: "           << MIN_QV << endl;
 	out << "MIN_QUAL: "         << (char) MIN_QUAL << endl;
 	out << "MIN_MAP_QUAL: "     << MIN_MAP_QUAL << endl;
+	out << "MAX_AVG_COV: "		<< MAX_AVG_COV << endl;
 
 	out << "INCLUDE_BASTARDS: " << bvalue(INCLUDE_BASTARDS) << endl;
 
@@ -307,11 +308,12 @@ void Microassembler::processGraph(Graph_t & g, const string & refname, const str
 			}
 
 			if (PRINT_ALL) { g.printDot(out_prefix + ".final.dot"); }
-			
-			g.clear(true);
-					
+								
 			break; // break loop if graph has been processed correctly
 		}
+		
+		// clear graph at the end.
+		g.clear(true);
 		
 		if(rptInRef) { cerr << " Found repeat in reference" << endl; }
 		if(rptInQry) { cerr << " Found repeat in assembly" << endl; }	
@@ -426,6 +428,7 @@ int Microassembler::run(int argc, char** argv)
 		"   -t <reads>    : min number of reads to thread (default: " << MIN_THREAD_READS << ")\n"
 		"   -c <cov>      : coverage threshold (default: " << COV_THRESHOLD << ")\n"
 		"   -x <covratio> : minimum coverage ratio (default: " << MIN_COV_RATIO << ")\n"
+		"   -u <maxavgcov>: maximum average coverage allowed per region (default: " << MAX_AVG_COV << ")\n"
 		"   -d <tipcov>   : tip coverage threshold (default: " << TIP_COV_THRESHOLD << ")\n"
 		"   -F <dfs>      : limit dfs search space (default: " << DFS_LIMIT << ")\n"
 		"   -P <maxp>     : limit on number of paths to report (default: " << PATH_LIMIT << ")\n"
@@ -449,7 +452,7 @@ int Microassembler::run(int argc, char** argv)
 
 	optarg = NULL;
 
-	while (!errflg && ((ch = getopt (argc, argv, "m:r:g:s:k:K:l:t:c:d:x:BDRACIhSL:T:M:vF:q:b:Q:P:p:E")) != EOF))
+	while (!errflg && ((ch = getopt (argc, argv, "u:m:r:g:s:k:K:l:t:c:d:x:BDRACIhSL:T:M:vF:q:b:Q:P:p:E")) != EOF))
 	{
 		switch (ch)
 		{
@@ -466,6 +469,7 @@ int Microassembler::run(int argc, char** argv)
 			case 'c': COV_THRESHOLD    = atoi(optarg); break;
 			case 'x': MIN_COV_RATIO    = atof(optarg); break;
 			case 'd': TIP_COV_THRESHOLD= atoi(optarg); break;
+			case 'u': MAX_AVG_COV      = atoi(optarg); break;
 
 			case 'B': INCLUDE_BASTARDS = 1;            break;
 
@@ -482,7 +486,7 @@ int Microassembler::run(int argc, char** argv)
 
 			case 'S': QUAD_ASM         = 1;			   break;
 			case 'C': BAMFILE          = 1; 		   break;
-			case 'E': FASTQ_ASM       = 1;            break;
+			case 'E': FASTQ_ASM        = 1;            break;
 		  
 			case 'q': MIN_QV           = atoi(optarg); break;
 			case 'b': MIN_MAP_QUAL     = atoi(optarg); break;
@@ -725,7 +729,18 @@ int Microassembler::run(int argc, char** argv)
 			int i = 0;
 			int j = 0;
 			int num_unmapped = 0;
-			while ( reader.GetNextAlignment(al) ) { // get next alignment and populate the alignment's string data fields
+			int totalreadbp = 0;
+			double avgcov = 0.0;
+			bool skip = false;
+			//while ( reader.GetNextAlignment(al) ) { // get next alignment and populate the alignment's string data fields
+			while ( reader.GetNextAlignmentCore(al) ) { // get next alignment and populate the alignment's string data fields
+				
+				avgcov = ((double) totalreadbp) / ((double)refinfo->rawseq.length());
+				if(avgcov > MAX_AVG_COV) { 
+					cout << "WARINING: Skip region " << refinfo->refchr << ":" << refinfo->refstart << "-" << refinfo->refend << ". Too much coverage (>" << MAX_AVG_COV << "x)." << endl;
+					skip = true;
+					break;
+				}
 				
 				// skip alignments outside region
 				int alstart = al.Position;
@@ -733,6 +748,8 @@ int Microassembler::run(int argc, char** argv)
 				if( (alstart < region.LeftPosition) || (alend > region.RightPosition) ) { continue; }
 				
 				if ( (al.MapQuality >= MIN_MAP_QUAL) && !al.IsDuplicate() ) { // only keeping ones with high map quality and skip PCR duplicates
+					
+					al.BuildCharData(); // Populates alignment string fields (read name, bases, qualities, tag data)
 										
 					int mate = 0;
 					if(al.IsFirstMate()) { mate = 1; }
@@ -760,7 +777,8 @@ int Microassembler::run(int argc, char** argv)
 							}
 							//cout << al.Name << endl;
 							readcnt++;
-
+							totalreadbp += (al.QueryBases).length();
+							
 							//void addMates(ReadId_t r1, ReadId_t r2)
 							//{
 							//g.readid2info[r1].mateid_m = r2;
@@ -782,6 +800,8 @@ int Microassembler::run(int argc, char** argv)
 							g.addpaired("self", al.Name, al.QueryBases, al.Qualities, mate, code[0]);
 							readcnt++;
 						}
+						totalreadbp += (al.QueryBases).length();
+						
 						//if ( RG_sibling.find(rg) != RG_sibling.end() ) {
 						//	g.addpaired("sib", al.Name, al.QueryBases, al.Qualities, mate, code[0]);
 						//	readcnt++;
@@ -793,7 +813,11 @@ int Microassembler::run(int argc, char** argv)
 			// close the reader & writer
 			//cout << "Number of PCR duplicates: " << num_PCR_duplicates << endl;	
 			//cout << "Number of unmapped reads: " << num_unmapped << endl;	
-			processGraph(g, graphref, PREFIX, minK, maxK);
+			
+			if(!skip){ 
+				processGraph(g, graphref, PREFIX, minK, maxK); 
+			}
+			else { g.clear(true); }
 		}
 		reader.Close();
 		//writer.Close();

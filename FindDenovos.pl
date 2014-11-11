@@ -17,8 +17,9 @@ use POSIX;
 use FindBin qw($Bin);
 use lib $Bin; # add $Bin directory to @INC
 use Usage;
-use Utils qw(:DEFAULT $findVariants $findDenovos $findSomatic $exportTool $bamtools);
+use Utils qw(:DEFAULT $findVariants $findDenovos $findSomatic $exportTool $bamtools $samtools $bcftools);
 use HashesIO;
+use SequenceIO;
 use Parallel::ForkManager;
 use List::Util qw[min max];
 #use Math::Random qw(:all);
@@ -50,6 +51,7 @@ my $cov_threshold = $defaults->{cov_threshold};
 my $tip_cov_threshold = $defaults->{tip_cov_threshold};
 my $radius = $defaults->{radius};
 my $windowSize = $defaults->{windowSize};
+my $max_reg_cov = $defaults->{max_reg_cov};
 my $delta = $defaults->{delta};
 my $map_qual = $defaults->{map_qual};
 my $maxmismatch = $defaults->{maxmismatch};
@@ -63,6 +65,7 @@ my $selected = $defaults->{selected};
 my $outformat = $defaults->{format};
 my $intarget;
 my $logs;
+my $STcalling;
 
 my $help = 0;
 my $VERBOSE = 0;
@@ -91,8 +94,12 @@ my %selfSVs;
 my %denovoSVs;
 my %inheritedSVs;
 
+my %alnHashDad; # hash of mutations from read alignments for mom
+my %alnHashMom; # hash of mutations from read alignments for dad
+
 my @members = qw/mom dad aff sib/;
 my @kids = qw/aff sib/;
+my @parents = qw/mom dad/;
 
 my $argcnt = scalar(@ARGV);
 my $start_time = time;
@@ -121,6 +128,7 @@ GetOptions(
     'covratio=f'   => \$covratio,
     'radius=i'     => \$radius,
     'window=i'     => \$windowSize,
+    'maxregcov=i'  => \$max_reg_cov,
     'step=i'       => \$delta,
     'mapscore=i'   => \$map_qual,
     'mismatches=i' => \$maxmismatch,
@@ -133,6 +141,7 @@ GetOptions(
 	'intarget!'    => \$intarget,
 	'logs!'   	   => \$logs,
 	'outratio=f'   => \$outratio,
+	'STcalling!'   => \$STcalling,
 
 ) or usageDenovo("FindDenovo.pl");
 
@@ -171,6 +180,7 @@ sub printParams {
 	print PFILE "-- low coverage threshold: $tip_cov_threshold\n";
 	print PFILE "-- size (bp) of the left and right extensions (radius): $radius\n";
 	print PFILE "-- window-size size (bp): $windowSize\n";
+	print PFILE "-- max coverage per region: $max_reg_cov\n";
 	print PFILE "-- step size (bp): $delta\n";
 	print PFILE "-- minimum mapping-quality: $map_qual\n";
 	print PFILE "-- minimum coverage for denovo mutation: $min_cov\n";
@@ -191,6 +201,8 @@ sub printParams {
 	else { print PFILE "-- output variants in target? no\n"; }
 	if($logs) { print PFILE "-- keep log files? yes\n"; }
 	else { print PFILE "-- keep log files? no\n"; }
+	if($STcalling) { print PFILE "-- call variant in normal with samtools? yes\n"; }
+	else { print PFILE "-- call variant in normal with samtools? no\n"; }
 	
 	close PFILE;
 }
@@ -281,8 +293,9 @@ sub callSVs {
 			"--covthr $cov_threshold ". 
 			"--lowcov $tip_cov_threshold ".
 			"--covratio $covratio ".
-			"--radius $radius ". 
-			"--window $windowSize ". 
+			"--radius $radius ".
+			"--window $windowSize ".
+			"--maxregcov $max_reg_cov ".
 			"--step $delta ".
 			"--mapscore $map_qual ".
 			"--mismatches $maxmismatch ".
@@ -339,10 +352,15 @@ sub findDenovos {
 				next if ( (!exists $fatherCov{$key}) || (!exists $motherCov{$key}) );
 				next if ( ($fatherCov{$key} < $min_cov) || ($motherCov{$key} < $min_cov) ); # min cov requirement
 				
+				# skipt mutation if present in dad or mom mutations from read alignments
+				#print STDERR "$k\n";
+				next if( (exists $alnHashDad{$key}) || (exists $alnHashDad{$key}) );
+				
 				if(!exists $denovoSVs{$k}) {
 					$denovoSVs{$k} = $mut;
 					$denovoL2K{$key} = $l2k->{$key};
 				}
+				
 			}
 			else { # inherithed or only in parents
 				if($mut->{inheritance} ne "no") {
@@ -664,6 +682,57 @@ sub exportSVs {
 	runCmd("export inherited", $command_inh);
 }
 
+## call mutations from alignments
+#####################################################
+
+sub callMutFromAlignment {
+	
+	print STDERR "-- Calling mutations from alignments (samtools/bcftools)\n";
+			
+	my $cnt = 0;
+	if($selected ne "null") {
+		$cnt = loadCoordinates("$selected", \%exons, $VERBOSE);
+	}
+	else {
+		$cnt = loadRegions("$BEDFILE", \%exons, $radius, $VERBOSE);		
+	}
+		
+	foreach my $ID (@parents) {
+	
+		my $outvcf = "$WORK/$ID/aln.vcf";
+		open FILE, "> $outvcf" or die "Can't open $outvcf ($!)\n"; print FILE "";
+		
+		my $bam_path;
+		if($ID eq "dad") { $bam_path = File::Spec->rel2abs($BAMDAD); }
+		if($ID eq "mom") { $bam_path = File::Spec->rel2abs($BAMMOM); }
+	
+		foreach my $k (keys %exons) { # for each chromosome
+			foreach my $exon (@{$exons{$k}}) { # for each exon	
+				
+				my $chr = $exon->{chr};
+				my $start = $exon->{start};
+				my $end = $exon->{end};
+			
+				## extend region left and right by radius
+				my $left = $start-$radius;
+				if ($left < 0) { $left = $start; }
+				my $right = $end+$radius;
+			
+				my $REG = "$chr:$left-$right";
+				#print STDERR "$REG\n";
+				 
+				my $command = "$samtools mpileup -Q 0 -F 0.0 -r $REG -uf $REF $bam_path | $bcftools call -p 1.0 -P 0 -V snps -Am - | awk '\$0!~/^#/' >> $outvcf";
+				
+				runCmd("samtools/bcftools calling", "$command");
+			}
+		}
+
+		close(FILE);
+		if($ID eq "dad") { loadVCF($outvcf, \%alnHashDad, $REF); }
+		if($ID eq "mom") { loadVCF($outvcf, \%alnHashMom, $REF); }
+	}
+}
+
 ## process family
 #####################################################
 
@@ -671,6 +740,7 @@ sub processFamily {
 	callSVs(); # call mutations on each family member
 	loadHashes(); # load mutations and coverage info
 	computeBestState(); # compute bestState for each mutation
+	if($STcalling) { callMutFromAlignment(); } # call mutations from alignment using samtools
 	findDenovos(); # detect denovo mutations in the kids
 	exportSVs(); # export mutations to file
 }

@@ -17,8 +17,9 @@ use POSIX;
 use FindBin qw($Bin);
 use lib $Bin; # add $Bin directory to @INC
 use Usage;
-use Utils qw(:DEFAULT $findVariants $findDenovos $findSomatic $exportTool $bamtools);
+use Utils qw(:DEFAULT $findVariants $findDenovos $findSomatic $exportTool $bamtools $samtools $bcftools);
 use HashesIO;
+use SequenceIO;
 use Parallel::ForkManager;
 use List::Util qw[min max];
 #use Math::Random qw(:all);
@@ -48,6 +49,7 @@ my $cov_threshold = $defaults->{cov_threshold};
 my $tip_cov_threshold = $defaults->{tip_cov_threshold};
 my $radius = $defaults->{radius};
 my $windowSize = $defaults->{windowSize};
+my $max_reg_cov = $defaults->{max_reg_cov};
 my $delta = $defaults->{delta};
 my $map_qual = $defaults->{map_qual};
 my $maxmismatch = $defaults->{maxmismatch};
@@ -62,6 +64,7 @@ my $dfs_limit = $defaults->{pathlimit};
 my $outformat = $defaults->{format};
 my $intarget;
 my $logs;
+my $STcalling;
 
 my $help = 0;
 my $VERBOSE = 0;
@@ -80,6 +83,9 @@ my %normalSVs;
 my %tumorSVs;
 my %somaticSVs;
 my %commonSVs;
+
+my %alnHashN; # hash of mutations from read alignments for normal
+my %alnHashT; # hash of mutations from read alignments for tumor
 
 my @members = qw/normal tumor/;
 
@@ -108,6 +114,7 @@ GetOptions(
     'covratio=f'   => \$covratio,
     'radius=i'     => \$radius,
     'window=i'     => \$windowSize,
+    'maxregcov=i'  => \$max_reg_cov,
     'step=i'       => \$delta,
     'mapscore=i'   => \$map_qual,
     'mismatches=i' => \$maxmismatch,
@@ -119,6 +126,7 @@ GetOptions(
 	# ouptut parameters
 	'intarget!'    => \$intarget,
 	'logs!'   	   => \$logs,
+	'STcalling!'   => \$STcalling,
 	'outratio=f'   => \$outratio,
 
 ) or usageDenovo("FindDenovo.pl");
@@ -158,6 +166,7 @@ sub printParams {
 	print PFILE "-- low coverage threshold: $tip_cov_threshold\n";
 	print PFILE "-- size (bp) of the left and right extensions (radius): $radius\n";
 	print PFILE "-- window-size size (bp): $windowSize\n";
+	print PFILE "-- max coverage per region: $max_reg_cov\n";
 	print PFILE "-- step size (bp): $delta\n";
 	print PFILE "-- minimum mapping-quality: $map_qual\n";
 	print PFILE "-- minimum coverage for exporting somatic mutation: $min_cov\n";
@@ -176,6 +185,8 @@ sub printParams {
 	else { print PFILE "-- output variants in target? no\n"; }
 	if($logs) { print PFILE "-- keep log files? yes\n"; }
 	else { print PFILE "-- keep log files? no\n"; }
+	if($STcalling) { print PFILE "-- call variant in normal with samtools? yes\n"; }
+	else { print PFILE "-- call variant in normal with samtools? no\n"; }
 	
 	close PFILE;
 }
@@ -283,8 +294,9 @@ sub callSVs {
 		"--covthr $cov_threshold ". 
 		"--lowcov $tip_cov_threshold ".
 		"--covratio $covratio ".
-		"--radius $radius ". 
-		"--window $windowSize ". 
+		"--radius $radius ".
+		"--window $windowSize ".
+		"--maxregcov $max_reg_cov ".
 		"--step $delta ".
 		"--mapscore $map_qual ".
 		"--mismatches $maxmismatch ".
@@ -510,7 +522,7 @@ sub parseBestState {
 ## parse covState and returns total
 ## coverage at mutation locus
 ##########################################
-sub getTotlCov {
+sub getTotalCov {
 
 	my $sv = $_[0];
 	my $role = $_[1];
@@ -566,9 +578,13 @@ sub findSomaticMut {
 		next if ($totcov < $min_cov);
 		
 		# skip mutation if reference for normal not sampled
-		next if (getTotlCov($mut,"normal") < $min_cov);
+		next if (getTotalCov($mut,"normal") < $min_cov);
 		#next if (!exists $normalCov{$key});
 		#next if ($normalCov{$key} < $min_cov); # min cov requirement
+		
+		# skipt mutation if present in normal mutations from read alignments
+		#print STDERR "$k\n";
+		next if(exists $alnHashN{$k});
 		
 		# compute inheritance
 		if($mut->{somatic} eq "yes") {
@@ -650,6 +666,57 @@ sub processBAM {
 	#else { print STDERR "$outdir already processed!\n"; }
 }
 
+## call mutations from alignments
+#####################################################
+
+sub callMutFromAlignment {
+	
+	print STDERR "-- Calling mutations from alignments (samtools/bcftools)\n";
+	
+	my $commandN = "";
+	#my $commandT = "";
+	
+	my $outvcfnormal = "$WORK/normal/aln.vcf";
+	#my $outvcftumor = "$WORK/tumor/aln.vcf";
+	
+	my $cnt = 0;
+	if($selected ne "null") {
+		$cnt = loadCoordinates("$selected", \%exons, $VERBOSE);
+	}
+	else {
+		$cnt = loadRegions("$BEDFILE", \%exons, $radius, $VERBOSE);		
+	}
+	
+	open FN, "> $outvcfnormal" or die "Can't open $outvcfnormal ($!)\n"; print FN "";
+	#open FT, "> $outvcftumor" or die "Can't open $outvcftumor ($!)\n"; print FT "";
+		
+	foreach my $k (keys %exons) { # for each chromosome
+		foreach my $exon (@{$exons{$k}}) { # for each exon	
+				
+			my $chr = $exon->{chr};
+			my $start = $exon->{start};
+			my $end = $exon->{end};
+			
+			## extend region left and right by radius
+			my $left = $start-$radius;
+			if ($left < 0) { $left = $start; }
+			my $right = $end+$radius;
+			
+			my $REG = "$chr:$left-$right";
+			#print STDERR "$REG\n";
+				 
+			$commandN = "$samtools mpileup -Q 0 -F 0.0 -r $REG -uf $REF $BAMNORMAL | $bcftools call -p 1.0 -P 0 -V snps -Am - | awk '\$0!~/^#/' >> $outvcfnormal";
+			#$commandT = "$samtools mpileup -Q 0 -F 0.0 -r $REG -uf $REF $BAMTUMOR | $bcftools call -p 1.0 -P 0 -V snps -Am - | awk '\$0!~/^#/' >> $outvcftumor";
+				
+			runCmd("samtools/bcftools calling", "$commandN");
+			#runCmd("samtools/bcftools calling", "$commandT");
+		}
+	}
+	
+	loadVCF($outvcfnormal, \%alnHashN, $REF);
+	#loadVCF($outvcftumor, \%alnHashT, $REF);
+}
+
 ## do the job
 ##########################################
 
@@ -659,6 +726,7 @@ processBAM($BAMNORMAL, "normal"); # process normal
 processBAM($BAMTUMOR, "tumor"); # process tumor
 loadHashes(); # load mutations and coverage info
 computeBestState(); # compute bestState for each mutation
+if($STcalling) { callMutFromAlignment(); } # call mutations from alignment using samtools
 findSomaticMut(); # detect somatic mutations in tumor
 exportSVs(); # export mutations to file
 
