@@ -17,9 +17,9 @@ Microassembler:
 .PHONY : samtools
 samtools:
 	cd $(ABS_SAMTOOLS_DIR); make; cd ../
-	
+
 .PHONY : bcftools
-samtools:
+bcftools:
 	cd $(ABS_BCFTOOLS_DIR); make; cd ../
 
 .PHONY : bamtools

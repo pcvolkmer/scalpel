@@ -27,8 +27,8 @@ our $findDenovos  = "$Bin/FindDenovos.pl";
 our $findSomatic  = "$Bin/FindSomatic.pl";
 our $exportTool   = "$Bin/ExportVariants.pl";
 our $bamtools     = "$Bin/bamtools-2.3.0/bin/bamtools";
-our $samtools     = "/nethome/gnarzisi/software/samtools-1.1/samtools";
-our $bcftools     = "/nethome/gnarzisi/software/bcftools-1.1/bcftools";
+our $samtools     = "$Bin/samtools-1.1/samtools";
+our $bcftools     = "$Bin/bcftools-1.1/bcftools";
 
 # Run system command 
 #####################################################
