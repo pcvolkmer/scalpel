@@ -33,6 +33,7 @@ $|=1;
 # required arguments
 my $dbfile;
 my $bedfile;
+my $reference;
 
 my $defaults = getDefaults();  
 
@@ -92,6 +93,7 @@ GetOptions(
 	# required parameters
     'db=s'  => \$dbfile,
     'bed=s' => \$bedfile,
+    'ref=s' => \$reference,
 
 	# optional paramters
     'format=s'   => \$format,
@@ -129,6 +131,7 @@ sub printParams {
 	print STDERR "Parameters: \n";
 	print STDERR "-- db-file: $dbfile\n";
 	print STDERR "-- bed-file: $bedfile\n";
+	print STDERR "-- reference file: $reference\n";
 	print STDERR "-- output format: $format\n";
 	print STDERR "-- SV type: $SVtype\n";
 	print STDERR "-- minimum coverage: $minCov\n";
@@ -163,8 +166,8 @@ sub printVariants {
 		my $date = strftime "%m/%d/%Y", localtime;
 		print "##fileDate=$date\n";
 		print "##source=scalpel$defaults->{version_num}\n";		
-		#print "##reference=XXX\n";
-				
+		print "##reference=$reference\n";
+
 		print "##INFO=<ID=AVGCOV,Number=1,Type=Float,Description=\"average k-mer coverage\">\n";
 		print "##INFO=<ID=MINCOV,Number=1,Type=Integer,Description=\"minimum k-mer coverage of non-reference allele\">\n";
 		print "##INFO=<ID=ALTCOV,Number=1,Type=Integer,Description=\"k-mer coverage of reference + any other allele (different from current non-reference) at locus\">\n";
@@ -174,7 +177,9 @@ sub printVariants {
 		print "##INFO=<ID=INH,Number=1,Type=String,Description=\"inheritance\">\n";
 		print "##INFO=<ID=BESTSTATE,Number=1,Type=String,Description=\"state of the mutation\">\n";
 		print "##INFO=<ID=COVSTATE,Number=1,Type=String,Description=\"coverage state of the mutation\">\n";
-		#print "##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=\"Somatic mutation in primary\">\n";
+		print "##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=\"Somatic mutation\">\n";
+		print "##FILTER=<ID=MS,Number=1,Type=STRING,Description=\"Microsatellite mutation (format: #LEN#MOTIF)\">\n";
+		print "##FILTER=<ID=lowCov,Number=0,Type=flag,Description=\"low coverage\">\n";
 		print "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
 		print "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"k-mer Depth\">\n";
 		print "##FORMAT=<ID=AD,Number=.,Type=Integer,Description=\"k-mer depth supporting reference/indel at the site\">\n";
@@ -185,7 +190,7 @@ sub printVariants {
 		print "##maxcov=$maxCov\n"; 
 		print "##minchi2=$minchi2\n"; 
 		print "##maxchi2=$maxchi2\n"; 
-		print "##covratio=$minCovRatio\n"; 
+		print "##covratio=$minCovRatio\n";
 
 		print "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t$sample_name\n";
 	}

@@ -62,6 +62,7 @@ my $outratio = $defaults->{outratio};
 my $WORK  = $defaults->{WORK};
 my $MAX_PROCESSES = $defaults->{MAX_PROCESSES};
 my $selected = $defaults->{selected};
+my $dfs_limit = $defaults->{pathlimit};
 my $outformat = $defaults->{format};
 my $intarget;
 my $logs;
@@ -132,6 +133,7 @@ GetOptions(
     'step=i'       => \$delta,
     'mapscore=i'   => \$map_qual,
     'mismatches=i' => \$maxmismatch,
+    'pathlimit=i'  => \$dfs_limit,
     'dir=s'        => \$WORK,
     'numprocs=i'   => \$MAX_PROCESSES,
     'coords=s'     => \$selected,
@@ -187,6 +189,7 @@ sub printParams {
 	print PFILE "-- minimum coverage ratio for sequencing error: $covratio\n";
 	print PFILE "-- minimum coverage ratio for exporting mutation: $outratio\n";
 	print PFILE "-- max number of mismatches for near-perfect repeats: $maxmismatch\n";
+	print PFILE "-- limit number of sequence paths to: $dfs_limit\n";
 	print PFILE "-- output directory: $WORK\n";
 	print PFILE "-- max number of parallel jobs: $MAX_PROCESSES\n";
 	print PFILE "-- father BAM file: $BAMDAD\n";
@@ -299,6 +302,7 @@ sub callSVs {
 			"--step $delta ".
 			"--mapscore $map_qual ".
 			"--mismatches $maxmismatch ".
+			"--pathlimit $dfs_limit ".
 			"--dir $WORK/$ID ".
 			"--sample ALL ".
 			"--numprocs $MAX_PROCESSES ".

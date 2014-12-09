@@ -84,7 +84,7 @@ OPTIONS:
     --maxregcov <int>  : maximum average coverage allowed per region [default $defaults{max_reg_cov}]
     --step <int>       : delta shift for the sliding window (in base-pairs) [default $defaults{delta}]
     --mapscore <int>   : minimum mapping quality for selecting reads to assemble [default $defaults{map_qual}]
-    --pathlimit <int>  : limit number of sequence paths [default $defaults{pathlimit}]
+    --pathlimit <int>  : limit number of sequence paths to [default $defaults{pathlimit}]
     --mismatches <int> : max number of mismatches in near-perfect repeat detection [default $defaults{maxmismatch}]
     --dir <directory>  : output directory [default $defaults{WORK}]
     --numprocs <int>   : number of parallel jobs (1 for no parallelization) [default $defaults{MAX_PROCESSES}]
@@ -143,6 +143,7 @@ OPTIONS:
     --maxregcov <int>  : maximum average coverage allowed per region [default $defaults{max_reg_cov}]
     --step <int>       : delta shift for the sliding window (in base-pairs) [default $defaults{delta}]
     --mapscore <int>   : minimum mapping quality for selecting reads to assemble [default $defaults{map_qual}]
+    --pathlimit <int>  : limit number of sequence paths to [default $defaults{pathlimit}]
     --mismatches <int> : max number of mismatches in near-perfect repeat detection [default $defaults{maxmismatch}]
     --dir <directory>  : output directory [default $defaults{WORK}]
     --numprocs <int>   : number of parallel jobs (1 for no parallelization) [default $defaults{MAX_PROCESSES}]
@@ -200,6 +201,7 @@ OPTIONS:
     --maxregcov <int>     : maximum average coverage allowed per region [default $defaults{max_reg_cov}]
     --step <int>          : delta shift for the sliding window (in base-pairs) [default $defaults{delta}]
     --mapscore <int>      : minimum mapping quality for selecting reads to assemble [default $defaults{map_qual}]
+    --pathlimit <int>     : limit number of sequence paths to [default $defaults{pathlimit}]
     --mismatches <int>    : max number of mismatches in near-perfect repeat detection [default $defaults{maxmismatch}]
     --dir <directory>     : output directory [default $defaults{WORK}]
     --numprocs <int>      : number of parallel jobs (1 for no parallelization) [default $defaults{MAX_PROCESSES}]
@@ -242,6 +244,7 @@ OPTIONS:
   Required:
     --db <file>        : Database of mutations
     --bed <file>       : BED file with list of regions in sorted order or single region in format chr:star-end (example: 1:31656613-31656883)
+    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
   
   Optional:
     --format <text>    : output format for variants (annovar | vcf) [default $defaults{format}]

@@ -176,7 +176,7 @@ sub printParams {
 	print PFILE "-- minimum coverage ratio for sequencing errors: $covratio\n";
 	print PFILE "-- minimum coverage ratio for exporting mutation: $outratio\n";
 	print PFILE "-- max number of mismatches for near-perfect repeats: $maxmismatch\n";
-	print PFILE "-- limit number of sequence paths: $dfs_limit\n";
+	print PFILE "-- limit number of sequence paths to: $dfs_limit\n";
 	print PFILE "-- output directory: $WORK\n";
 	print PFILE "-- max number of parallel jobs: $MAX_PROCESSES\n";
 	print PFILE "-- bam file: $bamfile\n";

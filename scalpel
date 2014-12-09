@@ -21,6 +21,7 @@ use lib $Bin; # add $Bin directory to @INC
 use Usage;
 use SequenceIO;
 use Utils qw(:DEFAULT $findVariants $findDenovos $findSomatic $exportTool $bamtools);
+use File::Path qw(make_path);
 
 use Utils;
 use Getopt::Long;
@@ -196,13 +197,15 @@ sub init()
 		
 		my $ABS_WORK = File::Spec->rel2abs($WORK);
 		
+		make_path("$ABS_WORK") if ! -r $ABS_WORK;
+		
 		if($export)  {
 			if ($argcnt < 2) {
 				header(); 
 				usageExport("scalpel --export");
 			}
 			usageExport("scalpel --export") if ($help);
-			if( (!defined $DBFILE) || (!defined $BEDFILE) ) { 
+			if( (!defined $DBFILE) || (!defined $BEDFILE) || (!defined $REF) ) { 
 				print STDERR "Required parameter missing!\n";
 				header(); 
 				usageExport("scalpel --export");   
@@ -212,6 +215,7 @@ sub init()
 				my $command = "$exportTool ".
 					"--db $DBFILE ".
 					"--bed $BEDFILE ".
+					"--ref $REF ".
 					"--mincov $min_cov ".
 					"--maxcov $max_cov ".
 					"--covratio $outratio ".

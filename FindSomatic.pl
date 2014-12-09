@@ -118,6 +118,7 @@ GetOptions(
     'step=i'       => \$delta,
     'mapscore=i'   => \$map_qual,
     'mismatches=i' => \$maxmismatch,
+    'pathlimit=i'  => \$dfs_limit,
     'dir=s'        => \$WORK,
     'numprocs=i'   => \$MAX_PROCESSES,
     'coords=s'     => \$selected,
@@ -173,6 +174,7 @@ sub printParams {
 	print PFILE "-- minimum coverage ratio for sequencing error: $covratio\n";
 	print PFILE "-- minimum coverage ratio for exporting mutation: $outratio\n";
 	print PFILE "-- max number of mismatches for near-perfect repeats: $maxmismatch\n";
+	print PFILE "-- limit number of sequence paths to: $dfs_limit\n";
 	print PFILE "-- output directory: $WORK\n";
 	print PFILE "-- max number of parallel jobs: $MAX_PROCESSES\n";
 	print PFILE "-- BAM file normal: $BAMNORMAL\n";
@@ -300,6 +302,7 @@ sub callSVs {
 		"--step $delta ".
 		"--mapscore $map_qual ".
 		"--mismatches $maxmismatch ".
+		"--pathlimit $dfs_limit ".
 		"--dir $WORK/$dir ".
 		"--sample ALL ".
 		"--numprocs $MAX_PROCESSES ".
@@ -674,10 +677,10 @@ sub callMutFromAlignment {
 	print STDERR "-- Calling mutations from alignments (samtools/bcftools)\n";
 	
 	my $commandN = "";
-	#my $commandT = "";
+	my $commandT = "";
 	
 	my $outvcfnormal = "$WORK/normal/aln.vcf";
-	#my $outvcftumor = "$WORK/tumor/aln.vcf";
+	my $outvcftumor = "$WORK/tumor/aln.vcf";
 	
 	my $cnt = 0;
 	if($selected ne "null") {
@@ -688,7 +691,7 @@ sub callMutFromAlignment {
 	}
 	
 	open FN, "> $outvcfnormal" or die "Can't open $outvcfnormal ($!)\n"; print FN "";
-	#open FT, "> $outvcftumor" or die "Can't open $outvcftumor ($!)\n"; print FT "";
+	open FT, "> $outvcftumor" or die "Can't open $outvcftumor ($!)\n"; print FT "";
 		
 	foreach my $k (keys %exons) { # for each chromosome
 		foreach my $exon (@{$exons{$k}}) { # for each exon	
@@ -706,15 +709,15 @@ sub callMutFromAlignment {
 			#print STDERR "$REG\n";
 				 
 			$commandN = "$samtools mpileup -Q 0 -F 0.0 -r $REG -uf $REF $BAMNORMAL | $bcftools call -p 1.0 -P 0 -V snps -Am - | awk '\$0!~/^#/' >> $outvcfnormal";
-			#$commandT = "$samtools mpileup -Q 0 -F 0.0 -r $REG -uf $REF $BAMTUMOR | $bcftools call -p 1.0 -P 0 -V snps -Am - | awk '\$0!~/^#/' >> $outvcftumor";
+			$commandT = "$samtools mpileup -Q 0 -F 0.0 -r $REG -uf $REF $BAMTUMOR | $bcftools call -p 1.0 -P 0 -V snps -Am - | awk '\$0!~/^#/' >> $outvcftumor";
 				
 			runCmd("samtools/bcftools calling", "$commandN");
-			#runCmd("samtools/bcftools calling", "$commandT");
+			runCmd("samtools/bcftools calling", "$commandT");
 		}
 	}
 	
 	loadVCF($outvcfnormal, \%alnHashN, $REF);
-	#loadVCF($outvcftumor, \%alnHashT, $REF);
+	loadVCF($outvcftumor, \%alnHashT, $REF);
 }
 
 ## do the job
