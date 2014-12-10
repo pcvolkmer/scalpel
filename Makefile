@@ -32,4 +32,4 @@ cleanbamtools:
 
 #.PHONY : clean
 clean:
-	rm -rf $(ABS_BAMTOOLS_DIR)/build; rm -f Microassembler/Microassembler
+	rm -rf $(ABS_BAMTOOLS_DIR)/build; rm -f Microassembler/Microassembler; cd $(ABS_BCFTOOLS_DIR); make clean-all; cd ..; cd $(ABS_SAMTOOLS_DIR); make clean-all; cd ..;
