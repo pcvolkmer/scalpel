@@ -653,6 +653,7 @@ sub exportSVs {
 	my $command_denovo = "$exportTool ".
 		"--db $WORK/denovos.db ".
 		"--bed $BEDFILE ".
+		"--ref $REF ".
 		"--format $outformat ".
 		"--type indel ". 
 		"--mincov $min_cov ". 
@@ -673,6 +674,7 @@ sub exportSVs {
 	my $command_inh = "$exportTool ".
 		"--db $WORK/inherited.db ".
 		"--bed $BEDFILE ".
+		"--ref $REF ".
 		"--format $outformat ".
 		"--type indel ". 
 		"--mincov $min_cov ". 

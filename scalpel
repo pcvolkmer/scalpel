@@ -315,6 +315,7 @@ sub init()
 					"--step $delta ".
 					"--mapscore $map_qual ".
 					"--mismatches $maxmismatch ".
+					"--pathlimit $dfs_limit ".
 					"--dir $DIR_main ".
 					"--numprocs $MAX_PROCESSES ".
 					"--format $outformat ".
@@ -374,6 +375,7 @@ sub init()
 						"--step $delta ".
 						"--mapscore $map_qual ".
 						"--mismatches $maxmismatch ".
+						"--pathlimit $dfs_limit ".
 						"--dir $DIR_val ".
 						"--numprocs $MAX_PROCESSES ".
 						"--format $outformat ".
@@ -435,6 +437,7 @@ sub init()
 					"--step $delta ".
 					"--mapscore $map_qual ".
 					"--mismatches $maxmismatch ".
+					"--pathlimit $dfs_limit ".
 					"--dir $DIR_main ".
 					"--numprocs $MAX_PROCESSES ".
 					"--format $outformat ".
@@ -494,6 +497,7 @@ sub init()
 						"--step $delta ".
 						"--mapscore $map_qual ".
 						"--mismatches $maxmismatch ".
+						"--pathlimit $dfs_limit ".
 						"--dir $DIR_val ".
 						"--numprocs $MAX_PROCESSES ".
 						"--format $outformat ".

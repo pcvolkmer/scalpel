@@ -621,6 +621,7 @@ sub exportSVs {
 	my $command_somatic = "$exportTool ".
 		"--db $WORK/somatic.db ".
 		"--bed $BEDFILE ".
+		"--ref $REF ".
 		"--format $outformat ".
 		"--type indel ". 
 		"--mincov $min_cov ". 
@@ -641,6 +642,7 @@ sub exportSVs {
 	my $command_comm = "$exportTool ".
 		"--db $WORK/common.db ".
 		"--bed $BEDFILE ".
+		"--ref $REF ".
 		"--format $outformat ".
 		"--type indel ". 
 		"--mincov $min_cov ". 
