@@ -297,6 +297,7 @@ sub exportSVs {
 	my $command = "$exportTool ".
 		"--db $WORK/variants.db ".
 		"--bed $bedfile ".
+		"--ref $REF ".
 		"--format $outformat ".
 		"--type indel ". 
 		"--mincov $min_cov ". 

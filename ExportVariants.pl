@@ -178,8 +178,6 @@ sub printVariants {
 		print "##INFO=<ID=BESTSTATE,Number=1,Type=String,Description=\"state of the mutation\">\n";
 		print "##INFO=<ID=COVSTATE,Number=1,Type=String,Description=\"coverage state of the mutation\">\n";
 		print "##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=\"Somatic mutation\">\n";
-		#print "##FILTER=<ID=MS,Number=1,Type=String,Description=\"Microsatellite mutation (format: #LEN#MOTIF)\">\n";
-		#print "##FILTER=<ID=lowCov,Number=0,Type=flag,Description=\"low coverage\">\n";
 		print "##FILTER=<ID=MS,Description=\"Microsatellite mutation (format: #LEN#MOTIF)\">\n";
 		print "##FILTER=<ID=lowCov,Description=\"low coverage\">\n";
 		print "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
