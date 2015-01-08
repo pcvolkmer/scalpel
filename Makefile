@@ -5,7 +5,7 @@ ABS_SAMTOOLS_DIR := $(realpath $(SAMTOOLS_DIR))
 BCFTOOLS_DIR := ./bcftools-1.1/
 ABS_BCFTOOLS_DIR := $(realpath $(BCFTOOLS_DIR))
 CXX := g++
-CXXFLAGS := -Wno-deprecated -Wall -O3 -g -Wl,-rpath,$(ABS_BAMTOOLS_DIR)/lib/
+CXXFLAGS := -Wno-deprecated -Wall -g -Wl,-rpath,$(ABS_BAMTOOLS_DIR)/lib/
 INCLUDES := -I$(ABS_BAMTOOLS_DIR)/include/ -L$(ABS_BAMTOOLS_DIR)/lib/
 
 all: bamtools samtools bcftools Microassembler
