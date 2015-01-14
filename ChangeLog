@@ -1,4 +1,11 @@
 ----------------------------------------------------------
+0.3.2 | Tue Jan 14 2015
+ 
+  * speed up thansk to g++ compilation with -O3 optimization flag 
+  * pass along pathlimit and reference arguments to sub commands
+  * pass reference argument to exportVariants for VCF generation
+
+----------------------------------------------------------
 0.3.1 | Tue Nov 11 2014
 
   * increased specificity for somatic and denovo calls

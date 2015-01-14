@@ -41,7 +41,7 @@ my %defaults = (
 	pathlimit 			=> 100000,
 	format				=> "vcf",
 	SVtype				=> "indel",
-	version_num			=> "0.3.1(beta)",
+	version_num			=> "0.3.2 (beta)",
 );
 
 #####################################################
