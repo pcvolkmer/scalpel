@@ -144,12 +144,10 @@ sub printParams {
 	print STDERR "-- in target?: $txt\n\n";
 }
 
-## print de novo indels and check how how many are detected correctly
-##########################################
-sub printVariants {
+sub printHeader {
 	
 	my $mode = $_[0];
-		
+	
 	##  print header if file did not exist (created now)
 	if($mode eq "annovar") { # annovar format
 		#print filters
@@ -197,6 +195,13 @@ sub printVariants {
 	elsif($mode eq "scalpel") { # scalpel format
 		print "#ID\tchr\tpos\ttype\tlength\tavgKcov\tminKcov\tzygosity\tref\tobs\taltKcov\tloglikelihood\tchi2score\tinheritance\tbestState\tcovState\n"; 
 	}
+}
+
+## print de novo indels and check how how many are detected correctly
+##########################################
+sub printVariants {
+	
+	my $mode = $_[0];
 	
 	my $num_snp = 0;
 	my $num_ins = 0;
@@ -343,6 +348,7 @@ sub printVariants {
 init();
 printParams() if ($VERBOSE);
 loadRegions("$bedfile", \%exons, 0, $VERBOSE);
+printHeader("$format");
 my $flag = loadDB("$dbfile", \%variants, \%exons, $intarget);
 if ($flag != -1) {
 	printVariants("$format");
