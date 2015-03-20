@@ -208,9 +208,9 @@ void Microassembler::processGraph(Graph_t & g, const string & refname, const str
 		}
 		Ref_t * refinfo = ri->second;
 		
-		bool rptInRef;
-		bool rptInQry;
-		bool cycleInGraph;
+		bool rptInRef = false;
+		bool rptInQry = false;
+		bool cycleInGraph = false;
 
 		// dinamic kmer mode
 		for (int k=minkmer; k<=maxkmer; k++) {
@@ -238,7 +238,7 @@ void Microassembler::processGraph(Graph_t & g, const string & refname, const str
 			}
 			
 			//if no repeats in the reference build graph			
-			g.buildgraph();
+			g.buildgraph(refinfo);
 			
 			double avgcov = ((double) g.totalreadbp_m) / ((double)refinfo->rawseq.length());			
 
@@ -248,67 +248,79 @@ void Microassembler::processGraph(Graph_t & g, const string & refname, const str
 				<< " cov: "     << avgcov << endl;
 
 			//printReads();
-			g.printStats();
+			g.printStats(0);
 	
 			string out_prefix = prefix + "/"  + READSET + "." + refname;
 	
 			if (PRINT_ALL) { g.printDot(out_prefix + ".0.dot"); }
-
-			// mark source and sink
-			g.markRefEnds(refinfo);
-			//g.markRefNodes();
 			
-			// if there is a cycle in the graph skip analysis
-			if (g.hasCycle()) { g.clear(false); cycleInGraph = true; continue; }
+			// remove low covergae nodes and compute number of connected components
+			g.removeLowCov(false, 0);
+			int numcomp = g.markRefNodes();
+			//cerr << "Num components = " << numcomp << endl;
+			
+			// process each connected components
+			for (int c=1; c<=numcomp; c++) { 
+				
+				g.printStats(c); 
+				
+				// mark source and sink
+				g.markRefEnds(refinfo, c);
+				//g.markRefNodes();
+			
+				// if there is a cycle in the graph skip analysis
+				if (g.hasCycle()) { g.clear(false); cycleInGraph = true; break; }
 
-			g.checkReadStarts();
+				g.checkReadStarts(c);
 	
-			// Initial compression
-			g.compress(); 
-			g.printStats();
-			if (PRINT_RAW) { g.printDot(out_prefix + ".1c.dot"); }
+				// Initial compression
+				g.compress(c); 
+				g.printStats(c);
+				if (PRINT_RAW) { g.printDot(out_prefix + ".1c.dot"); }
 
-			// Remove low coverage
-			g.removeLowCov();
-			if (PRINT_ALL) { g.printDot(out_prefix + ".2l.dot"); }
+				// Remove low coverage
+				g.removeLowCov(true, c);
+				if (PRINT_ALL) { g.printDot(out_prefix + ".2l.dot"); }
 
+				// Remove tips
+				g.removeTips(c);
+				if (PRINT_ALL) { g.printDot(out_prefix + ".3t.dot"); }
 
-			// Remove tips
-			g.removeTips();
-			if (PRINT_ALL) { g.printDot(out_prefix + ".3t.dot"); }
+				// skip analysis if there is a cycle in the graph 
+				if (g.hasCycle()) { g.clear(false); cycleInGraph = true; break; }
 
-			// skip analysis if there is a cycle in the graph 
-			if (g.hasCycle()) { g.clear(false); cycleInGraph = true; continue; }
-
-			// skip analysis if there is a perfect or near-perfect repeat in the graph paths			
-			if(g.hasRepeatsInGraphPaths()) { g.clear(false); rptInQry = true; continue; }
+				// skip analysis if there is a perfect or near-perfect repeat in the graph paths			
+				if(g.hasRepeatsInGraphPaths()) { g.clear(false); rptInQry = true; break; }
 			
-			// Thread reads
-			// BUG: threding is off because creates problems if the the bubble is not covered (end-to-end) 
-			// by the reads. This is particularly problematic for detecting denovo events
-			//g.threadReads();
-			//if (PRINT_ALL) { g.printDot(out_prefix + ".4thread.dot"); }
+				// Thread reads
+				// BUG: threding is off because creates problems if the the bubble is not covered (end-to-end) 
+				// by the reads. This is particularly problematic for detecting denovo events
+				//g.threadReads();
+				//if (PRINT_ALL) { g.printDot(out_prefix + ".4thread.dot"); }
 		
-			// scaffold contigs
-			if (SCAFFOLD_CONTIGS)
-			{
-				g.scaffoldContigs();
+				// scaffold contigs
+				if (SCAFFOLD_CONTIGS)
+				{
+					g.scaffoldContigs();
+				}
+
+				if (PRINT_DENOVO)
+				{
+					g.denovoNodes(out_prefix + ".denovo.fa", refname);
+				}  
+
+				if (PRINT_REFPATH)
+				{
+					//g.markRefNodes();
+					g.countRefPath(out_prefix + ".paths.fa", refname, false);
+					//g.printFasta(prefix + "." + refname + ".nodes.fa");
+				}
+
+				if (PRINT_ALL) { g.printDot(out_prefix + ".final.dot"); }					
 			}
-
-			if (PRINT_DENOVO)
-			{
-				g.denovoNodes(out_prefix + ".denovo.fa", refname);
-			}  
-
-			if (PRINT_REFPATH)
-			{
-				g.markRefNodes();
-				g.countRefPath(out_prefix + ".paths.fa", refname, false);
-				//g.printFasta(prefix + "." + refname + ".nodes.fa");
-			}
-
-			if (PRINT_ALL) { g.printDot(out_prefix + ".final.dot"); }
-								
+			
+			if (rptInQry || cycleInGraph) { continue; }
+			
 			break; // break loop if graph has been processed correctly
 		}
 		
@@ -350,7 +362,7 @@ void Microassembler::fastqAsm(Graph_t & g, const string & prefix)
     }
     
 	// Initial compression
-	g.compress(); 
+	g.compress(0); 
 	g.printStats();
 
 	if (PRINT_RAW) 
@@ -360,7 +372,7 @@ void Microassembler::fastqAsm(Graph_t & g, const string & prefix)
     }
 
 	// Remove low coverage
-	g.removeLowCov();
+	g.removeLowCov(true,0);
 	if (PRINT_ALL) 
     { 
       g.printDot(out_prefix + ".2l.dot"); 
@@ -368,7 +380,7 @@ void Microassembler::fastqAsm(Graph_t & g, const string & prefix)
     }
 
 	// Remove tips
-	g.removeTips();
+	g.removeTips(0);
 	if (PRINT_ALL) 
     { 
       g.printDot(out_prefix + ".3t.dot"); 

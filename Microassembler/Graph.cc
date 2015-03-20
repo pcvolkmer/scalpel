@@ -98,7 +98,8 @@ void Graph_t::loadSequence(int readid, const string & seq, bool isRef, int trim5
 			vi->second->updateCovDistr((int)(vi->second->cov_m));
 		}
 
-		Edgedir_t fdir, rdir;
+		Edgedir_t fdir = FF;
+		Edgedir_t rdir = FF;
 
 		if      (uc.ori_m == F && vc.ori_m == F) { fdir = FF; rdir = RR; }
 		else if (uc.ori_m == F && vc.ori_m == R) { fdir = FR; rdir = FR; }
@@ -164,7 +165,8 @@ void Graph_t::addSeqCov(int readid, const string & seq, int cov)
 	    ui->second->cov_m += cov;
 		vi->second->cov_m += cov;
 
-		Edgedir_t fdir, rdir;
+		Edgedir_t fdir = FF;
+		Edgedir_t rdir = FF;
 
 		if      (uc.ori_m == F && vc.ori_m == F) { fdir = FF; rdir = RR; }
 		else if (uc.ori_m == F && vc.ori_m == R) { fdir = FR; rdir = FR; }
@@ -373,8 +375,9 @@ void Graph_t::addpaired(const string & set,
 // build graph by trimming and loading the reads
 //////////////////////////////////////////////////////////////
 
-void Graph_t::buildgraph()
+void Graph_t::buildgraph(Ref_t * refinfo)
 {
+	ref_m = refinfo;
 	for (unsigned int i = 0; i < readid2info.size(); i++)
 	{
 		if ( !(readid2info[i].isjunk) ) { // skip junk (not A,C,G,T)
@@ -1379,7 +1382,7 @@ void Graph_t::printPairs(const string & filename)
 // markRefEnds
 //////////////////////////////////////////////////////////////
 
-void Graph_t::markRefEnds(Ref_t * refinfo)
+void Graph_t::markRefEnds(Ref_t * refinfo, int compid)
 {
 	if (VERBOSE) 
 	{ 
@@ -1387,8 +1390,8 @@ void Graph_t::markRefEnds(Ref_t * refinfo)
 			<< " " << refinfo->seq << endl; 
 	}
 
-	ref_m = refinfo;
-	int refid; 
+	//ref_m = refinfo;
+	int refid = 0; 
 	if(!is_ref_added) {
 		refid = addRead("ref", ref_m->hdr, ref_m->rawseq, 'R');
 		is_ref_added = true;
@@ -1424,7 +1427,7 @@ void Graph_t::markRefEnds(Ref_t * refinfo)
 		tmp_mer.set(ref_m->rawseq.substr(offset, K));
 		source_tmp = getNode(tmp_mer);
 
-		if ((source_tmp) && (source_tmp->cov_m >= COV_THRESHOLD))
+		if ((source_tmp) && (source_tmp->cov_m >= COV_THRESHOLD) && (source_tmp->component_m == compid) )
 		{ 
 			if(source_m == NULL) { // found 1st match
 				source_m = source_tmp;
@@ -1449,7 +1452,7 @@ void Graph_t::markRefEnds(Ref_t * refinfo)
 	}
 	
 	if (!source_m) {
-		cerr << "No match to reference for source" << endl;
+		cerr << "No match to reference for source" <<  endl;
 		return;
 	}
 
@@ -1461,7 +1464,7 @@ void Graph_t::markRefEnds(Ref_t * refinfo)
 		tmp_mer.set(ref_m->rawseq.substr(offset, K));
 		sink_tmp = getNode(tmp_mer);
 
-		if ((sink_tmp) && (sink_tmp->cov_m >= COV_THRESHOLD))
+		if ((sink_tmp) && (sink_tmp->cov_m >= COV_THRESHOLD) && (sink_tmp->component_m == compid))
 		{
 			if(sink_m == NULL) { // found 1st macth
 				sink_m = sink_tmp;
@@ -1504,8 +1507,10 @@ void Graph_t::markRefEnds(Ref_t * refinfo)
 
 	//cerr << " searching " << source_m->nodeid_m << " to " << sink_m->nodeid_m << endl;
 
-	// Add the fake source node
-	Node_t * newsource = new Node_t("source");
+	// Add the fake source node	
+	std::stringstream sourceid;
+	sourceid << "source" << compid;
+	Node_t * newsource = new Node_t(sourceid.str());
 
 	Edgedir_t sourcedir = FF;
 	if (source_mer.ori_m == R) { sourcedir = FR; }
@@ -1538,8 +1543,10 @@ void Graph_t::markRefEnds(Ref_t * refinfo)
 
 	nodes_m.insert(make_pair(newsource->nodeid_m, newsource));
 
-	// Add the fake sink node
-	Node_t * newsink = new Node_t("sink");
+	// Add the fake sink node	
+	std::stringstream sinkid;
+	sinkid << "sink" << compid;
+	Node_t * newsink = new Node_t(sinkid.str());
 
 	Edgedir_t sinkdir = RR;
 	if (sink_mer.ori_m == R) { sinkdir = FF; } 
@@ -1575,7 +1582,7 @@ void Graph_t::markRefEnds(Ref_t * refinfo)
 // markRefNodes
 //////////////////////////////////////////////////////////////
 
-void Graph_t::markRefNodes()
+int Graph_t::markRefNodes()
 {
 	cerr << endl << "mark refnodes" << endl;
 	int nodes = 0;
@@ -1656,6 +1663,8 @@ void Graph_t::markRefNodes()
 		cerr << " " << *si;
 	}
 	cerr << endl;
+	
+	return comp;
 }
 
 // denovoNodes
@@ -1982,7 +1991,7 @@ void Graph_t::compressNode(Node_t * node, Ori_t dir)
 // compress
 //////////////////////////////////////////////////////////////
 
-void Graph_t::compress()
+void Graph_t::compress(int compid)
 {
 	cerr << "compressing graph:";
 
@@ -1990,13 +1999,15 @@ void Graph_t::compress()
 
 	for (mi = nodes_m.begin(); mi != nodes_m.end(); mi++)
 	{
-		if (mi->second->dead_m)  { continue; }
-		if (mi->second->isRef_m) { continue; }
+		if(mi->second->component_m == compid) { //only analyze the selected connected component 
+		
+			if (mi->second->dead_m)  { continue; }
+			if (mi->second->isRef_m) { continue; }
 
-		compressNode(mi->second, F);
-		compressNode(mi->second, R);
+			compressNode(mi->second, F);
+			compressNode(mi->second, R);
+		}
 	}
-
 
 	cleanDead();
 }
@@ -2057,7 +2068,7 @@ void Graph_t::removeNode(Node_t * node)
 // removeLowCov
 //////////////////////////////////////////////////////////////
 
-void Graph_t::removeLowCov()
+void Graph_t::removeLowCov(bool docompression, int compid)
 {
 	cerr << endl << "removing low coverage:";
 
@@ -2070,33 +2081,36 @@ void Graph_t::removeLowCov()
 
 	for (mi = nodes_m.begin(); mi != nodes_m.end(); mi++)
 	{
-		Node_t * node = mi->second;
+		if(mi->second->component_m == compid) { //only process the selected connected component 
+		
+			Node_t * node = mi->second;
 
-		if (node->isRef_m)    { continue; }
-		//if (node->touchRef_m) { continue; }
+			if (node->isRef_m)    { continue; }
+			//if (node->touchRef_m) { continue; }
 
-		//if (node->cov_m <= TIP_COV_THRESHOLD)
-		//if (node->minCov() <= TIP_COV_THRESHOLD)
-		if ( (node->minCov() <= TIP_COV_THRESHOLD) || (node->minCov() <= (MIN_COV_RATIO*avgcov)) )
-		{
-			lowcovnodes++;
-			removeNode(node);
+			//if (node->cov_m <= TIP_COV_THRESHOLD)
+			//if (node->minCov() <= TIP_COV_THRESHOLD)
+			if ( (node->minCov() <= TIP_COV_THRESHOLD) || (node->minCov() <= (MIN_COV_RATIO*avgcov)) )
+			{
+				lowcovnodes++;
+				removeNode(node);
+			}
 		}
 	}
 
 	cerr << " found " << lowcovnodes;
 
 	cleanDead();
-	compress();
+	if(docompression) { compress(compid); }
 
-	printStats();
+	printStats(compid);
 }
 
 
 // removeTips
 //////////////////////////////////////////////////////////////
 
-void Graph_t::removeTips()
+void Graph_t::removeTips(int compid)
 {
 	int tips = 0;
 	int round = 0;
@@ -2112,27 +2126,30 @@ void Graph_t::removeTips()
 
 		for (mi = nodes_m.begin(); mi != nodes_m.end(); mi++)
 		{
-			Node_t * cur = mi->second;
+			if(mi->second->component_m == compid) { //only process the selected connected component 
+			
+				Node_t * cur = mi->second;
 
-			if (cur->isRef_m) { continue; }
+				if (cur->isRef_m) { continue; }
 
-			int deg = cur->edges_m.size();
-			int len = cur->strlen() - K + 1;
+				int deg = cur->edges_m.size();
+				int len = cur->strlen() - K + 1;
 
-			if ((deg <= 1) && (len < MAX_TIP_LEN))
-			{
-				removeNode(cur);
-				tips++;
+				if ((deg <= 1) && (len < MAX_TIP_LEN))
+				{
+					removeNode(cur);
+					tips++;
+				}
 			}
 		}
 
 		cerr << " removed: " << tips << endl;
 
-		if (tips) { compress(); }
+		if (tips) { compress(compid); }
 	}
 	while (tips);
 
-	printStats();
+	printStats(compid);
 }
 
 // greedyTrim
@@ -2231,9 +2248,9 @@ void Graph_t::greedyTrim()
 
 	cerr << " removed: " << branches << endl;
 
-	if (branches) { compress(); }
+	if (branches) { compress(0); }
 
-	printStats();
+	printStats(0);
 }
 
 
@@ -2561,19 +2578,19 @@ void Graph_t::threadReads()
 		if (thread > 0)
 		{
 			cleanDead();
-			compress();
+			compress(0);
 		}
 	}
 
 	VERBOSE=oldverbose;
 
-	printStats();
+	printStats(0);
 }
 
 // checkReadStarts
 //////////////////////////////////////////////////////////////
 
-void Graph_t::checkReadStarts()
+void Graph_t::checkReadStarts(int compid)
 {
 	cerr << "checking read starts.... ";
 
@@ -2584,48 +2601,51 @@ void Graph_t::checkReadStarts()
 
 	for (mi = nodes_m.begin(); mi != nodes_m.end(); mi++)
 	{
-		Node_t * cur = mi->second;
+		if(mi->second->component_m == compid) { //only analyze the selected connected component 
 
-		for (unsigned int i = 0; i < cur->readstarts_m.size(); i++)
-		{
-			ReadStart_t & rstart = cur->readstarts_m[i];
-			ReadId_t rid         = rstart.readid_m;
-			ReadInfo_t & rinfo   = readid2info[rid];
+			Node_t * cur = mi->second;
 
-			string ckmer;
-			string rkmer = rinfo.seq_m.substr(rstart.trim5_m, K);
-
-			all++;
-
-			if (rstart.ori_m == R)
+			for (unsigned int i = 0; i < cur->readstarts_m.size(); i++)
 			{
-				ckmer = cur->str_m.substr(rstart.nodeoffset_m-K+1, K);
-				ckmer = CanonicalMer_t::rc(ckmer);
-			}
-			else
-			{
-				ckmer = cur->str_m.substr(rstart.nodeoffset_m, K);
-			}
+				ReadStart_t & rstart = cur->readstarts_m[i];
+				ReadId_t rid         = rstart.readid_m;
+				ReadInfo_t & rinfo   = readid2info[rid];
 
-			if ((rkmer != ckmer)) // || VERBOSE)
-			{
-				cerr << "Checking " << rid << " " << rinfo.readname_m 
-					<< " " << rstart.ori_m 
-					<< " offset:" << rstart.nodeoffset_m 
-					<< " trim5:" << rstart.trim5_m << endl;
-				cerr << "  " << rkmer << endl;
-				cerr << "  " << ckmer << endl;
+				string ckmer;
+				string rkmer = rinfo.seq_m.substr(rstart.trim5_m, K);
 
-				cur->print(cerr) << endl;
+				all++;
 
-				if (rkmer != ckmer)
+				if (rstart.ori_m == R)
 				{
-					bad++;
-					cerr << "mismatch: " << cur->str_m << endl;
+					ckmer = cur->str_m.substr(rstart.nodeoffset_m-K+1, K);
+					ckmer = CanonicalMer_t::rc(ckmer);
 				}
 				else
 				{
-					cerr << "ok" << endl;
+					ckmer = cur->str_m.substr(rstart.nodeoffset_m, K);
+				}
+
+				if ((rkmer != ckmer)) // || VERBOSE)
+				{
+					cerr << "Checking " << rid << " " << rinfo.readname_m 
+						<< " " << rstart.ori_m 
+						<< " offset:" << rstart.nodeoffset_m 
+						<< " trim5:" << rstart.trim5_m << endl;
+					cerr << "  " << rkmer << endl;
+					cerr << "  " << ckmer << endl;
+
+					cur->print(cerr) << endl;
+
+					if (rkmer != ckmer)
+					{
+						bad++;
+						cerr << "mismatch: " << cur->str_m << endl;
+					}
+					else
+					{
+						cerr << "ok" << endl;
+					}
 				}
 			}
 		}
@@ -2737,7 +2757,7 @@ void Graph_t::bundleMates()
 					ReadInfo_t & minfo   = readid2info[mid];
 					ReadStart_t & mstart = other->readstarts_m[minfo.readstartidx_m];
 
-					Edgedir_t linkdir;
+					Edgedir_t linkdir = FF;
 
 					if      ((rstart.ori_m == F) && (mstart.ori_m == F)) { linkdir = FF; }
 					else if ((rstart.ori_m == F) && (mstart.ori_m == R)) { linkdir = FR; }
@@ -2834,7 +2854,7 @@ void Graph_t::scaffoldContigs()
 {
 	cerr << endl << "== scaffolding ==" << endl;
 
-	checkReadStarts();
+	checkReadStarts(0);
 	updateContigReadStarts();
 	bundleMates();
 
@@ -2856,7 +2876,7 @@ void Graph_t::printGraph()
 // printStats
 //////////////////////////////////////////////////////////////
 
-void Graph_t::printStats()
+void Graph_t::printStats(int compid)
 {
 	int edgecnt = 0;
 	int span = 0;
@@ -2864,11 +2884,13 @@ void Graph_t::printStats()
 	MerTable_t::iterator gi;
 	for (gi = nodes_m.begin(); gi != nodes_m.end(); gi++)
 	{
-		edgecnt += gi->second->edges_m.size();
-		span += gi->second->strlen();
+		if(gi->second->component_m == compid) {
+			edgecnt += gi->second->edges_m.size();
+			span += gi->second->strlen();
+		}
 	}
 
-	cerr << "  nodes: " << nodes_m.size() 
+	cerr << "  " << compid << ": nodes: " << nodes_m.size() 
 		<< " edges: " << edgecnt
 		<< " span: " << span << endl;
 }

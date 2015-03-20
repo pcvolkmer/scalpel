@@ -18,6 +18,7 @@
 #include <cstring>
 #include <exception>
 #include <stdexcept> // out_of_range exception
+#include <iostream>
 
 #include "align.hh"
 #include "util.hh"
@@ -119,7 +120,7 @@ public:
 	void loadSequence(int readid, const string & seq, bool isRef, int trim5);
 	void trimAndLoad(int readid, const string & seq, const string & qv, bool isRef);
 	void trim(int readid, const string & seq, const string & qv, bool isRef);
-	void buildgraph();
+	void buildgraph(Ref_t * refinfo);
 
 	int countBastardReads();
 
@@ -161,8 +162,8 @@ public:
 	void printDot(const string & filename);
 	void printFasta(const string & filename);
 	void printPairs(const string & filename);
-	void markRefEnds(Ref_t * refinfo);
-	void markRefNodes();
+	void markRefEnds(Ref_t * refinfo, int compid);
+	int markRefNodes();
 	void denovoNodes(const string & filename, const string & refname);
 	void alignRefNodes();
 	void countRefPath(const string & filename, const string & refname, bool printPathsToFile);
@@ -170,19 +171,19 @@ public:
 	Node_t * getNode(CanonicalMer_t mer);
 	Node_t * getNode(Edge_t & edge);
 	void compressNode(Node_t * node, Ori_t dir);
-	void compress();
+	void compress(int compid);
 	void cleanDead();
 	void removeNode(Node_t * node);
-	void removeLowCov();
-	void removeTips();
+	void removeLowCov(bool docompression, int compid);
+	void removeTips(int compid);
     void greedyTrim();
 	void threadReads();
-	void checkReadStarts();
+	void checkReadStarts(int compid);
 	void updateContigReadStarts();
 	void bundleMates();
 	void scaffoldContigs();
 	void printGraph();
-	void printStats();
+	void printStats(int compid=0);
 };
 
 #endif

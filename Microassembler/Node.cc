@@ -290,7 +290,7 @@ int Node_t::cntReadCode(char code)
 	si != reads_m.end();
 	si++)
 	{
-		if ( (*si) < 0 || (*si) > readid2info->size() ) { continue; } // skip over illegal values
+		if ( (*si) < 0 || (*si) > (int)readid2info->size() ) { continue; } // skip over illegal values
 		if (readid2info->at(*si).code_m == code)
 		{
 			retval++;
