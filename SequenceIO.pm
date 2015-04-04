@@ -337,7 +337,7 @@ sub loadVCF {
     }
     close VCF;
 
-	print STDERR "$cnt mutaations.\n";
+	print STDERR "$cnt mutations.\n";
 }
 
 # load the genome in fasta format

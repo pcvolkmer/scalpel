@@ -388,13 +388,14 @@ void Microassembler::fastqAsm(Graph_t & g, const string & prefix)
     }
 
 	// Thread reads
+	/*
 	g.threadReads();
 	if (PRINT_ALL) 
     { 
       g.printDot(out_prefix + ".4thread.dot"); 
       g.printFasta(out_prefix + ".4thread.fa"); 
     }
-
+	*/
 	// scaffold contigs
 	if (SCAFFOLD_CONTIGS)
 	{

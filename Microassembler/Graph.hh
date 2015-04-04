@@ -19,6 +19,7 @@
 #include <exception>
 #include <stdexcept> // out_of_range exception
 #include <iostream>
+#include <unordered_map>
 
 #include "align.hh"
 #include "util.hh"
@@ -39,7 +40,7 @@ using namespace std;
 // Graph_t
 //////////////////////////////////////////////////////////////////////////
 
-typedef map<Mer_t, Node_t *> MerTable_t;
+typedef unordered_map<Mer_t, Node_t *> MerTable_t;
 
 class Graph_t
 {
@@ -143,8 +144,6 @@ public:
 		const string & qv,
 		char code);
 
-    void addSeqCov(int readid, const string & seq, int cov);
-
 	void addpaired(const string & set,
 		const string & readname,
 		const string & seq,
@@ -153,6 +152,11 @@ public:
 		char code);
 
 	void loadReadsSFA(const string & filename);
+	void processPath(Path_t * path, Ref_t * ref, FILE * fp, bool printPathsToFile, int &complete, int &perfect, int &withsnps, int &withindel, int &withmix);
+	void processShortPath(Node_t * node, Ref_t * ref, FILE * fp, bool printPathsToFile, int &complete, int &perfect, int &withsnps, int &withindel, int &withmix);
+	//Path_t * bfs(Node_t * source, Node_t * sink, Ori_t dir, Ref_t * ref);
+	Path_t * bfs(Node_t * source, Node_t * sink, Ori_t dir, Ref_t * ref);
+	void eka(Node_t * source, Node_t * sink, Ori_t dir, Ref_t * ref, FILE * fp, bool printPathsToFile);
 	void dfs(Node_t * source, Node_t * sink, Ori_t dir, Ref_t * ref, FILE * fp, bool printPathsToFile);
 	bool findRepeatsInGraphPaths(Node_t * source, Node_t * sink, Ori_t dir);
 	bool hasCycle();

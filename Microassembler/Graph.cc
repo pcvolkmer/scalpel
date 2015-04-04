@@ -51,7 +51,7 @@ void Graph_t::loadSequence(int readid, const string & seq, bool isRef, int trim5
 	CanonicalMer_t uc;
 	CanonicalMer_t vc;
 
-	set<Mer_t> readmers;
+	unordered_set<Mer_t> readmers;
 
 	int end = seq.length() - K;
 	int offset = 0;
@@ -130,53 +130,6 @@ void Graph_t::loadSequence(int readid, const string & seq, bool isRef, int trim5
 	}
 }
 
-
-// addSeqCov
-//////////////////////////////////////////////////////////////
-
-void Graph_t::addSeqCov(int readid, const string & seq, int cov)
-{
- // cerr << "AddSeqCov: " << seq << " " << cov << endl;
-
-	CanonicalMer_t uc;
-	CanonicalMer_t vc;
-
-	int end = seq.length() - K;
-	for (int offset = 0; offset < end; offset++)
-	{
-		uc.set(seq.substr(offset,   K));
-		vc.set(seq.substr(offset+1, K));
-
-		//cerr << readid << "\t" << offset << "\t" << uc << "\t" << vc << endl;
-
-		MerTable_t::iterator ui = nodes_m.find(uc.mer_m);
-		MerTable_t::iterator vi = nodes_m.find(vc.mer_m);
-
-		if (ui == nodes_m.end())
-		{
-			ui = nodes_m.insert(make_pair(uc.mer_m, new Node_t(uc.mer_m))).first; 
-		}
-
-		if (vi == nodes_m.end())
-		{
-			vi = nodes_m.insert(make_pair(vc.mer_m, new Node_t(vc.mer_m))).first; 
-		}
-
-	    ui->second->cov_m += cov;
-		vi->second->cov_m += cov;
-
-		Edgedir_t fdir = FF;
-		Edgedir_t rdir = FF;
-
-		if      (uc.ori_m == F && vc.ori_m == F) { fdir = FF; rdir = RR; }
-		else if (uc.ori_m == F && vc.ori_m == R) { fdir = FR; rdir = FR; }
-		else if (uc.ori_m == R && vc.ori_m == F) { fdir = RF; rdir = RF; }
-		else if (uc.ori_m == R && vc.ori_m == R) { fdir = RR; rdir = FF; }
-
-		ui->second->addEdge(vc.mer_m, fdir, readid);
-		vi->second->addEdge(uc.mer_m, rdir, readid);
-	}
-}
 
 // trim
 //////////////////////////////////////////////////////////////
@@ -581,7 +534,506 @@ bool Graph_t::findRepeatsInGraphPaths(Node_t * source, Node_t * sink, Ori_t dir)
 	return answer;
 }
 
+// processPath
+// align path sequence to reference and parse aligment to extract mutations
+//////////////////////////////////////////////////////////////
+void Graph_t::processPath(Path_t * path, Ref_t * ref, FILE * fp, bool printPathsToFile,
+	int &complete, int &perfect, int &withsnps, int &withindel, int &withmix) {
+	
+	const string & refseq = ref->seq;
+	
+	path->match_bp = 0;
+	path->snp_bp = 0;
+	path->ins_bp = 0;
+	path->del_bp = 0;
+	
+	if (VERBOSE) { cerr << "alignment" << endl; }
+	if (VERBOSE) { cerr << "r:  " << refseq << endl; }
+	if (VERBOSE) { cerr << "p:  " << path->str() << endl; }
 
+	// Get alignment
+	string ref_aln;
+	string path_aln;
+	//string cov_aln;
+	
+	global_align_aff(refseq, path->str(), ref_aln, path_aln, 0, 0);
+	//global_cov_align_aff(refseq, path->str(), path->covDistr(), ref_aln, path_aln, cov_aln, 0, 0);
+
+	assert(ref_aln.length() == path_aln.length());
+
+	cerr << "r':" << ref_aln << endl;  
+	cerr << "p':" << path_aln << " " << path->cov() << " [" << path->mincov() << " - " << path->maxcov() << "]" << endl; 
+	cerr << "d':"; 
+	for (unsigned int i = 0; i < ref_aln.length(); i++)
+	{
+		if (ref_aln[i] == path_aln[i]) { path->match_bp++;  cerr << ' '; }
+		else if (ref_aln[i] == '-')    { path->ins_bp++;    cerr << '^'; }
+		else if (path_aln[i] == '-')   { path->del_bp++;    cerr << 'v'; }
+		else                           { path->snp_bp++;    cerr << 'x'; }
+	}
+	cerr << "\n";
+	//cerr << "c':" << cov_aln << endl;
+	
+	//print coverage distribution along the sequence path
+	cerr << "c':" << path->covstr() << endl;
+	vector<int> coverage = path->covDistr();
+	
+	//print coverage distribution along the edges of the path
+	/*
+	coverage = path->readCovNodes();
+	num = new char[30];
+	cerr << "e':";
+	for (unsigned int i = 0; i < coverage.size(); i++) {
+		sprintf(num, "%.1f", coverage[i]);
+		cerr << num << " ";
+	}
+	cerr << endl;
+	*/
+	
+	try {
+		// scan aligned sequences for differences
+
+		unsigned int pos_in_ref = 0; 
+		unsigned int refpos  = 0; 
+		unsigned int pathpos = 0; 
+
+		Node_t * spanner;
+
+		char code;
+
+		vector<Transcript_t> transcript;
+	
+		// cov_window keeps track of the minimum coverage in a window of size K
+		multiset<int> cov_window;
+	 			
+		int end = min( (int)(K-1), (int)(coverage.size()-1) );
+		assert(end >= 0);
+		assert(end < (int)coverage.size());
+		for (int t=0; t<end; t++) { cov_window.insert(coverage[t]); }
+	
+		for (unsigned int i = 0; i < ref_aln.length(); i++) {	
+			int toadd = min( (int)(pathpos+K-1), (int)(coverage.size()-1));
+			assert(toadd >= 0);
+			assert(toadd < (int)coverage.size());
+			cov_window.insert(coverage[toadd]);
+					
+			unsigned int old_pathpos = pathpos;
+			if (ref_aln[i] == '-') {
+				code = '^'; // insertion
+				pos_in_ref = refpos; // save value of position in reference before increment
+				pathpos++;           
+			}
+			else if (path_aln[i] == '-') { 
+				code = 'v'; // deletion
+				pos_in_ref = refpos; // save value of position in reference before increment
+				refpos++;            
+			}
+			else { 
+				code = '=';
+				if (ref_aln[i] != path_aln[i]) { code = 'x'; }
+				pos_in_ref = refpos; // save value of position in reference before increment
+				refpos++; 
+				pathpos++; 
+			}
+
+			// pathpos is a 1-based coordinate, need to substruc 1 to correctly search 
+			// into the sequence path which is indexed using 0-based coordinates
+			spanner = path->pathcontig(pathpos);
+			spanner->setRead2InfoList(&readid2info);
+
+			// get min coverage in the window
+			int cov_at_pos = *(cov_window.begin()); // need to be adjusted for possible left normalization after alignment				
+		
+			//float cov_at_pos = path->covAt(pathpos+(K/2)); // need to be adjusted for possible left normalization after alignment
+			//float cov_at_pos = path->covAt(pathpos); 
+		
+			if(old_pathpos != pathpos) { // remove old coverage only if change in path position
+				assert(pathpos > 0);
+				assert(pathpos <= coverage.size());
+				multiset<int>:: iterator it = cov_window.find(coverage[pathpos-1]);
+				cov_window.erase(it);
+			}
+			//multiset<float>:: iterator it = cov_window.find(path->covAt(i));
+			//cov_window.erase(path->covAt(i));
+		
+			if (code != '=')
+			{ 
+				cerr << (ref_aln[i] == '-' ? '*' : ref_aln[i]) << " " << (path_aln[i] == '-' ? '*' : path_aln[i]) << " " << code 
+					<< " " << pos_in_ref + ref->refstart + ref->trim5 << " " << pathpos 
+					<< " " << spanner->nodeid_m << " " << spanner->cov_m << " " << cov_at_pos << " " << spanner->reads_m.size() << " " << spanner->cntReadCode(CODE_BASTARD)
+					<< endl;
+
+				unsigned int rrpos = pos_in_ref+ref->refstart+ref->trim5;
+				unsigned int ts = transcript.size();
+
+				//if (ts > 0)
+				//{
+				//  cerr << "== " << ts << " "
+				//       << transcript[ts-1].code << " "
+				//       << transcript[ts-1].pos << " " 
+				//       << transcript[ts-1].ref << " "
+				//       << transcript[ts-1].qry << endl;
+				//}
+				
+				// compute previous base to the event for both reference and alternative sequences
+				// [required for VCF output format]
+				int pr=i-1; // referecne index
+				assert(pr >= 0);
+				int pa=i-1; // alternative index
+				assert(pa >= 0);
+				while( (ref_aln[pr] != 'A') && (ref_aln[pr] != 'C') && (ref_aln[pr]) != 'G' && (ref_aln[pr] != 'T') ) { pr--; }
+				while( (path_aln[pa] != 'A') && (path_aln[pa] != 'C') && (path_aln[pa] != 'G') && (path_aln[pa] != 'T') ) { pa--; }
+				
+
+				if (((code == '^') && (ts > 0) && (transcript[ts-1].code == code) && (transcript[ts-1].pos == rrpos)) ||
+					((code == 'v') && (ts > 0) && (transcript[ts-1].code == code) && ((transcript[ts-1].pos + transcript[ts-1].ref.length()) == rrpos)))
+				{
+					// extend the indel
+					transcript[ts-1].ref += ref_aln[i];
+					transcript[ts-1].qry += path_aln[i];
+					(transcript[ts-1].cov_distr).push_back(cov_at_pos);
+				
+					//if(code == '^') { // insertion 
+					//	if(cov_at_pos < min_cov) { min_cov = cov_at_pos; } 
+					//}
+				}
+				else
+				{
+					//transcript.push_back(Transcript_t(rrpos, code, ref_aln[i], path_aln[i], spanner->cov_m));
+					transcript.push_back(Transcript_t(rrpos, code, ref_aln[i], path_aln[i], cov_at_pos, ref_aln[pr], path_aln[pa]));
+					//min_cov = 1000000;
+				}
+			}
+		}
+
+		cerr << ">p_" << ref->refchr << ":" << ref->refstart << "-" << ref->refend << "_" << complete
+			<< " cycle: " << path->hasCycle_m
+			<< " match: " << path->match_bp
+			<< " snp: "   << path->snp_bp
+			<< " ins: "   << path->ins_bp
+			<< " del: "   << path->del_bp;
+
+		for (unsigned int ti = 0; ti < transcript.size(); ti++)
+		{
+			//cerr << " " << transcript[ti].pos << ":" << transcript[ti].ref << "|" << transcript[ti].qry << "|" << transcript[ti].cov;
+			cerr << " " << transcript[ti].pos << ":" << transcript[ti].ref << "|" << transcript[ti].qry << "|" << transcript[ti].getAvgCov() << "|" << transcript[ti].getMinCov() << "|" << transcript[ti].prev_bp_ref << "|" << transcript[ti].prev_bp_alt;
+		}
+
+		cerr << endl;
+
+		if      ((path->snp_bp + path->ins_bp + path->del_bp) == 0) { perfect++;   }
+		else if ((path->snp_bp) == 0)                               { withindel++; }
+		else if ((path->ins_bp + path->del_bp) == 0)                { withsnps++;  }
+		else                                                        { withmix++;   }
+
+		if(printPathsToFile) {
+			fprintf(fp,  ">p_%s:%d-%d_%d len=%d cov=%0.2f mincov=%0.2f maxcov=%0.2f pathlen=%d hasCycle=%d match=%d snp=%d ins=%d del=%d pathstr=%s\n",
+				ref->refchr.c_str(), ref->refstart, ref->refend, complete, 
+				path->strlen(), path->cov(), path->mincov(), path->maxcov(), path->pathlen(), 
+				path->hasCycle_m, path->match_bp, path->snp_bp, path->ins_bp, path->del_bp, path->pathstr().c_str());
+			
+			fprintf(fp, "%s\n", path->str().c_str());
+		}
+
+		for (unsigned int i = 0; i < path->nodes_m.size(); i++)
+		{
+			Node_t * cur = path->nodes_m[i];
+			cur->onRefPath_m++;
+		}
+
+		//if ((PATH_LIMIT) && (complete > PATH_LIMIT))
+		//{
+		//	cerr << "WARNING: PATH_LIMIT reached: " << PATH_LIMIT << endl;
+		//	break;
+		//}
+	
+	}
+	catch(std::out_of_range& e) {
+   		cerr << "An exception occurred: " << e.what( ) << endl;
+ 	}
+	catch (...) { 
+		cout << "default exception" << endl; 
+	}
+	
+}
+
+// processShortPath
+// compute poartial alignment to reference and parse aligment to extract mutations
+//////////////////////////////////////////////////////////////
+void Graph_t::processShortPath(Node_t * source, Ref_t * ref, FILE * fp, bool printPathsToFile,
+	int &complete, int &perfect, int &withsnps, int &withindel, int &withmix) {
+
+	const string & refseq = ref->seq;
+	
+	Node_t * node = getNode(source->edges_m[0]);
+	node->onRefPath_m++;
+
+	string str = node->str_m;
+
+	if (source->edges_m[0].destdir() == R)
+	{
+		str = CanonicalMer_t::rc(str);
+	}
+
+
+	VERBOSE = 1;
+
+	if (VERBOSE) { cerr << "partial align" << endl; }
+
+	if (VERBOSE) { cerr << "alignment" << endl; }
+	if (VERBOSE) { cerr << "r:  " << refseq << endl; }
+	if (VERBOSE) { cerr << "p:  " << str << endl; }
+
+	// Get alignment
+	string ref_aln;
+	string path_aln;
+	string cov_aln;
+
+	global_align_aff(refseq, str, ref_aln, path_aln, 1, 0);
+
+	if (VERBOSE) 
+	{ 
+		cerr << "r': " << ref_aln << endl;  
+		cerr << "p': " << path_aln << endl; 
+	}
+
+	int match_bp = 0;
+	int snp_bp = 0;
+	int ins_bp = 0;
+	int del_bp = 0;
+
+	assert(ref_aln.length() == path_aln.length());
+
+	for (unsigned int i = 0; i < ref_aln.length(); i++)
+	{
+		if (ref_aln[i] == path_aln[i]) { match_bp++; }
+		else if (ref_aln[i] == '-')    { ins_bp++; }
+		else if (path_aln[i] == '-')   { del_bp++; }
+		else                           { snp_bp++; }
+	}
+
+	cerr << ">sp" << complete
+		<< " match: " << match_bp
+		<< " snp: " << snp_bp
+		<< " ins: " << ins_bp
+		<< " del: " << del_bp
+		<< endl;
+
+	if      ((snp_bp + ins_bp + del_bp) == 0) { perfect++;   }
+	else if ((snp_bp) == 0)                   { withindel++; }
+	else if ((ins_bp + del_bp) == 0)          { withsnps++;  }
+	else                                      { withmix++;   }
+
+	if(printPathsToFile) {
+		fprintf(fp,  ">p_%d len=%d cov=%0.2f mincov=%0.2f maxcov=%0.2f pathlen=%d match=%d snp=%d ins=%d del=%d pathstr=%s\n",
+			complete, (int) str.length(), node->cov_m, node->cov_m, node->cov_m, 1, match_bp, snp_bp, ins_bp, del_bp, "shortmatch");
+		
+		fprintf(fp, "%s\n", str.c_str());
+	}
+}
+
+// bfs
+//////////////////////////////////////////////////////////////
+Path_t * Graph_t::bfs(Node_t * source, Node_t * sink, Ori_t dir, Ref_t * ref)
+{
+	const string & refseq = ref->seq;
+	
+	int complete = 0;
+	int toolong = 0;
+	int deadend = 0;
+	int shortpaths = 0;
+	int allcycles = 0;
+	int visit = 0;
+	
+	int reflen = refseq.length();
+
+	deque<Path_t *> Q;
+	
+	Path_t * path = new Path_t(K);
+	path->nodes_m.push_back(source);
+	path->dir_m = dir;
+	path->len_m = K;
+	//Path_t * best = new Path_t(path,K);
+	Path_t * best = NULL;
+
+	Q.push_back(path);
+	
+	while (!Q.empty())
+	{
+		visit++;
+
+		if ((DFS_LIMIT) && (visit > DFS_LIMIT)) {
+			cerr << "WARNING: DFS_LIMIT (" << DFS_LIMIT << ") exceeded" << endl;
+			break;
+		}
+
+		path = Q.front();
+		Q.pop_front();
+
+		Node_t * cur = path->curNode();
+
+		// if sink is found and at lest one of the edges in the path was not discovered (flag == 0)
+		if ( (cur == sink) && (path->flag == 0) )
+		{
+			// success!
+			complete++;
+			if (best == NULL) { best = new Path_t(path,K); }
+			else if(path->score > best->score) { 
+				Path_t * old_best = best;
+				best = new Path_t(path,K); // keep best path
+				delete old_best;
+			} 
+			//break;
+		}
+		else if (path->len_m > reflen + MAX_INDEL_LEN)
+		{
+			// abort
+			toolong++;
+			//cerr << "too long: " << path->pathstr() << " " << path->str() << endl;
+		}
+		else
+		{
+			int tried = 0;
+
+			for (unsigned int i = 0; i < cur->edges_m.size(); i++)
+			{
+				Edge_t * edge = &(cur->edges_m[i]);	
+				
+				if (edge->isDir(path->dir_m))
+				{
+					tried++;
+
+					Node_t * other = getNode(*edge);
+
+					if (!path->hasCycle_m && path->hasCycle(other))
+					{
+						allcycles++;
+						//cerr << "Cycle detected in BFS!!" << endl;
+					}
+
+					Path_t * newpath = new Path_t(path,K);
+
+					newpath->nodes_m.push_back(other);
+					newpath->edges_m.push_back(edge);
+					newpath->edgedir_m.push_back(edge->dir_m);
+					newpath->dir_m = edge->destdir();
+					newpath->len_m = path->len_m + other->strlen() - K + 1;
+					newpath->flag = path->flag * edge->getFlag(); // update flag;
+					if(edge->getFlag() == 0) { newpath->score = path->score + 1; }// update score;
+					
+					Q.push_back(newpath);
+				}
+			}
+
+			if (tried == 0)
+			{
+				deadend++;
+				//cerr << "deadend: " <<  cur->nodeid_m << endl;
+			}
+		}
+
+		path->reset();
+		delete path;
+	}
+
+	while (!Q.empty())
+	{
+		Path_t * path = Q.front();
+		delete path;
+		Q.pop_front();
+	}
+
+	if (complete == 0)
+	{
+		// didn't find an end-to-end path
+
+		if (visit == 2)
+		{
+			// source to single node
+			assert(source->edges_m.size() == 1);
+
+			complete++;
+			shortpaths++;			
+		}
+		//path = NULL;
+		best = NULL;
+	}
+	
+	return best;
+}
+
+// Edmonds–Karp style algorithm to enumarate the minimum number of 
+// paths (source-to-sink) that cover every edge of the graph
+//////////////////////////////////////////////////////////////
+void Graph_t::eka(Node_t * source, Node_t * sink, Ori_t dir, 
+	Ref_t * ref, FILE * fp, bool printPathsToFile)
+{
+	cerr << endl << "searching from " << source->nodeid_m << " to " << sink->nodeid_m << " dir: " << dir << endl;
+	
+	int complete = 0;
+	//int toolong = 0;
+	//int deadend = 0;
+	//int visit = 0;
+	//int shortpaths = 0;
+	int allcycles = 0;
+
+	int perfect   = 0;
+	int withsnps  = 0;
+	int withindel = 0;
+	int withmix   = 0;
+	
+	while(true) {
+		
+		Path_t * path = bfs(source, sink, dir, ref);
+				
+		if (path == NULL) { break; }
+				
+		if (path->hasCycle_m) { allcycles++; }
+		complete++;
+		
+		processPath(path, ref, fp, printPathsToFile, complete, perfect, withsnps, withindel, withmix);
+		
+		for (unsigned int i = 0; i < path->edges_m.size(); i++) {
+			(path->edges_m[i])->setFlag(1);
+		}
+
+		path->reset();
+		delete path;
+	}
+	
+	int withmixindel = withmix + withindel;
+	//int withmixsnp   = withmix + withsnps;
+	//int withvar      = withsnps + withindel + withmix;
+
+	//cerr << " refcomp: "    << ref_m->refcomp
+	//	<< " refnodes: "   << ref_m->refnodes-2
+	//	<< " visit: "      << visit
+	//	<< " complete: "   << complete
+	//	<< " allcycles: "  << allcycles
+	//	<< " shortpaths: " << shortpaths
+	//	<< " toolong: "    << toolong
+	//	<< " deadend: "    << deadend << endl;
+	
+	cerr << " refcomp: "   << ref_m->refcomp
+		<< " refnodes: "   << ref_m->refnodes-2
+		<< " complete: "   << complete 
+		<< " allcycles: "  << allcycles << endl;
+	
+
+	cerr << " perfect: "     << perfect
+		<< " withsnps: "     << withsnps
+		<< " withindel: "    << withindel
+		<< " withmix: "      << withmix 
+		<< " withmixindel: " << withmixindel
+		<< endl;
+
+	//if(printPathsToFile) {
+	//	fprintf(fp, ">stats\treflen=%d\tnumreads=%d\tcov=%0.02f\ttrim5=%d\ttrim3=%d\tnodes=%d\trefnodes=%d\tcomp=%d\trefcomp=%d\tvisit=%d\tcomplete=%d\tallcycles=%d\tshortpath=%d\ttoolong=%d\tdeadend=%d\tperfect=%d\twithsnps=%d\twithindel=%d\twithmix=%d\twithmixindel=%d\twithmixsnp=%d\twithvar=%d\n",
+	//		(int) ref_m->seq.length(), (int) readid2info.size(), ((float)totalreadbp_m / (float) ref_m->seq.length()),
+	//		ref_m->trim5, ref_m->trim3, (int) nodes_m.size()-2, ref_m->refnodes-2, ref_m->allcomp, ref_m->refcomp,
+	//		visit, complete, allcycles, shortpaths, toolong, deadend, perfect, withsnps, withindel, withmix, withmixindel, withmixsnp, withvar);
+	//}
+}
 
 // dfs
 //////////////////////////////////////////////////////////////
@@ -640,225 +1092,7 @@ void Graph_t::dfs(Node_t * source, Node_t * sink, Ori_t dir,
 		{
 			// success!
 			complete++;
-			
-			//if(isAlmostRepeat(path->str(), K, MAX_MISMATCH)) {
-			//	cerr << "Near-perfect repeat in assembled sequence for kmer " << K << "... skip!" << endl;
-			//	continue;
-			//}
-			
-			path->match_bp = 0;
-			path->snp_bp = 0;
-			path->ins_bp = 0;
-			path->del_bp = 0;
-
-			if (VERBOSE) { cerr << "alignment" << endl; }
-			if (VERBOSE) { cerr << "r:  " << refseq << endl; }
-			if (VERBOSE) { cerr << "p:  " << path->str() << endl; }
-
-			// Get alignment
-			string ref_aln;
-			string path_aln;
-			//string cov_aln;
-			
-			global_align_aff(refseq, path->str(), ref_aln, path_aln, 0, 0);
-			//global_cov_align_aff(refseq, path->str(), path->covDistr(), ref_aln, path_aln, cov_aln, 0, 0);
-
-			assert(ref_aln.length() == path_aln.length());
-
-			cerr << "r':" << ref_aln << endl;  
-			cerr << "p':" << path_aln << " " << path->cov() << " [" << path->mincov() << " - " << path->maxcov() << "]" << endl; 
-			cerr << "d':"; 
-			for (unsigned int i = 0; i < ref_aln.length(); i++)
-			{
-				if (ref_aln[i] == path_aln[i]) { path->match_bp++;  cerr << ' '; }
-				else if (ref_aln[i] == '-')    { path->ins_bp++;    cerr << '^'; }
-				else if (path_aln[i] == '-')   { path->del_bp++;    cerr << 'v'; }
-				else                           { path->snp_bp++;    cerr << 'x'; }
-			}
-			cerr << "\n";
-			//cerr << "c':" << cov_aln << endl;
-			
-			//print coverage distribution along the sequence path
-			cerr << "c':" << path->covstr() << endl;
-			vector<int> coverage = path->covDistr();
-			
-			//print coverage distribution along the edges of the path
-			/*
-			coverage = path->readCovNodes();
-			num = new char[30];
-			cerr << "e':";
-			for (unsigned int i = 0; i < coverage.size(); i++) {
-				sprintf(num, "%.1f", coverage[i]);
-				cerr << num << " ";
-			}
-			cerr << endl;
-			*/
-			
-			try {
-				// scan aligned sequences for differences
-
-				unsigned int pos_in_ref = 0; 
-				unsigned int refpos  = 0; 
-				unsigned int pathpos = 0; 
-
-				Node_t * spanner;
-
-				char code;
-
-				vector<Transcript_t> transcript;
-			
-				// cov_window keeps track of the minimum coverage in a window of size K
-				multiset<int> cov_window;
-			 			
-				int end = min( (int)(K-1), (int)(coverage.size()-1) );
-				assert(end >= 0);
-				assert(end < (int)coverage.size());
-				for (int t=0; t<end; t++) { cov_window.insert(coverage[t]); }
-			
-				for (unsigned int i = 0; i < ref_aln.length(); i++) {	
-					int toadd = min( (int)(pathpos+K-1), (int)(coverage.size()-1));
-					assert(toadd >= 0);
-					assert(toadd < (int)coverage.size());
-					cov_window.insert(coverage[toadd]);
-							
-					unsigned int old_pathpos = pathpos;
-					if (ref_aln[i] == '-') {
-						code = '^'; // insertion
-						pos_in_ref = refpos; // save value of position in reference before increment
-						pathpos++;           
-					}
-					else if (path_aln[i] == '-') { 
-						code = 'v'; // deletion
-						pos_in_ref = refpos; // save value of position in reference before increment
-						refpos++;            
-					}
-					else { 
-						code = '=';
-						if (ref_aln[i] != path_aln[i]) { code = 'x'; }
-						pos_in_ref = refpos; // save value of position in reference before increment
-						refpos++; 
-						pathpos++; 
-					}
-
-					// pathpos is a 1-based coordinate, need to substruc 1 to correctly search 
-					// into the sequence path which is indexed using 0-based coordinates
-					spanner = path->pathcontig(pathpos);
-					spanner->setRead2InfoList(&readid2info);
-
-					// get min coverage in the window
-					int cov_at_pos = *(cov_window.begin()); // need to be adjusted for possible left normalization after alignment				
-				
-					//float cov_at_pos = path->covAt(pathpos+(K/2)); // need to be adjusted for possible left normalization after alignment
-					//float cov_at_pos = path->covAt(pathpos); 
-				
-					if(old_pathpos != pathpos) { // remove old coverage only if change in path position
-						assert(pathpos > 0);
-						assert(pathpos <= coverage.size());
-						multiset<int>:: iterator it = cov_window.find(coverage[pathpos-1]);
-						cov_window.erase(it);
-					}
-					//multiset<float>:: iterator it = cov_window.find(path->covAt(i));
-					//cov_window.erase(path->covAt(i));
-				
-					if (code != '=')
-					{ 
-						cerr << (ref_aln[i] == '-' ? '*' : ref_aln[i]) << " " << (path_aln[i] == '-' ? '*' : path_aln[i]) << " " << code 
-							<< " " << pos_in_ref + ref->refstart + ref->trim5 << " " << pathpos 
-							<< " " << spanner->nodeid_m << " " << spanner->cov_m << " " << cov_at_pos << " " << spanner->reads_m.size() << " " << spanner->cntReadCode(CODE_BASTARD)
-							<< endl;
-
-						unsigned int rrpos = pos_in_ref+ref->refstart+ref->trim5;
-						unsigned int ts = transcript.size();
-
-						//if (ts > 0)
-						//{
-						//  cerr << "== " << ts << " "
-						//       << transcript[ts-1].code << " "
-						//       << transcript[ts-1].pos << " " 
-						//       << transcript[ts-1].ref << " "
-						//       << transcript[ts-1].qry << endl;
-						//}
-						
-						// compute previous base to the event for both reference and alternative sequences
-						// [required for VCF output format]
-						int pr=i-1; // referecne index
-						assert(pr >= 0);
-						int pa=i-1; // alternative index
-						assert(pa >= 0);
-						while( (ref_aln[pr] != 'A') && (ref_aln[pr] != 'C') && (ref_aln[pr]) != 'G' && (ref_aln[pr] != 'T') ) { pr--; }
-						while( (path_aln[pa] != 'A') && (path_aln[pa] != 'C') && (path_aln[pa] != 'G') && (path_aln[pa] != 'T') ) { pa--; }
-						
-
-						if (((code == '^') && (ts > 0) && (transcript[ts-1].code == code) && (transcript[ts-1].pos == rrpos)) ||
-							((code == 'v') && (ts > 0) && (transcript[ts-1].code == code) && ((transcript[ts-1].pos + transcript[ts-1].ref.length()) == rrpos)))
-						{
-							// extend the indel
-							transcript[ts-1].ref += ref_aln[i];
-							transcript[ts-1].qry += path_aln[i];
-							(transcript[ts-1].cov_distr).push_back(cov_at_pos);
-						
-							//if(code == '^') { // insertion 
-							//	if(cov_at_pos < min_cov) { min_cov = cov_at_pos; } 
-							//}
-						}
-						else
-						{
-							//transcript.push_back(Transcript_t(rrpos, code, ref_aln[i], path_aln[i], spanner->cov_m));
-							transcript.push_back(Transcript_t(rrpos, code, ref_aln[i], path_aln[i], cov_at_pos, ref_aln[pr], path_aln[pa]));
-							//min_cov = 1000000;
-						}
-					}
-				}
-		
-				cerr << ">p_" << ref->refchr << ":" << ref->refstart << "-" << ref->refend << "_" << complete
-					<< " cycle: " << path->hasCycle_m
-					<< " match: " << path->match_bp
-					<< " snp: "   << path->snp_bp
-					<< " ins: "   << path->ins_bp
-					<< " del: "   << path->del_bp;
-
-				for (unsigned int ti = 0; ti < transcript.size(); ti++)
-				{
-					//cerr << " " << transcript[ti].pos << ":" << transcript[ti].ref << "|" << transcript[ti].qry << "|" << transcript[ti].cov;
-					cerr << " " << transcript[ti].pos << ":" << transcript[ti].ref << "|" << transcript[ti].qry << "|" << transcript[ti].getAvgCov() << "|" << transcript[ti].getMinCov() << "|" << transcript[ti].prev_bp_ref << "|" << transcript[ti].prev_bp_alt;
-				}
-
-				cerr << endl;
-
-				if      ((path->snp_bp + path->ins_bp + path->del_bp) == 0) { perfect++;   }
-				else if ((path->snp_bp) == 0)                               { withindel++; }
-				else if ((path->ins_bp + path->del_bp) == 0)                 { withsnps++;  }
-				else                                                        { withmix++;   }
-
-				if(printPathsToFile) {
-					fprintf(fp,  ">p_%s:%d-%d_%d len=%d cov=%0.2f mincov=%0.2f maxcov=%0.2f pathlen=%d hasCycle=%d match=%d snp=%d ins=%d del=%d pathstr=%s\n",
-						ref->refchr.c_str(), ref->refstart, ref->refend, complete, 
-						path->strlen(), path->cov(), path->mincov(), path->maxcov(), path->pathlen(), 
-						path->hasCycle_m, path->match_bp, path->snp_bp, path->ins_bp, path->del_bp, path->pathstr().c_str());
-					
-					fprintf(fp, "%s\n", path->str().c_str());
-				}
-
-				for (unsigned int i = 0; i < path->nodes_m.size(); i++)
-				{
-					Node_t * cur = path->nodes_m[i];
-					cur->onRefPath_m++;
-				}
-
-				if ((PATH_LIMIT) && (complete > PATH_LIMIT))
-				{
-					cerr << "WARNING: PATH_LIMIT reached: " << PATH_LIMIT << endl;
-					break;
-				}
-			
-			}
-			catch(std::out_of_range& e) {
-		   		cerr << "An exception occurred: " << e.what( ) << endl;
-		 	}
-			catch (...) { 
-				cout << "default exception" << endl; 
-			}
-			
+			processPath(path, ref, fp, printPathsToFile, complete, perfect, withsnps, withindel, withmix);
 		}
 		else if (path->len_m > reflen + MAX_INDEL_LEN)
 		{
@@ -924,74 +1158,8 @@ void Graph_t::dfs(Node_t * source, Node_t * sink, Ori_t dir,
 
 			complete++;
 			shortpaths++;
-
-			Node_t * node = getNode(source->edges_m[0]);
-			node->onRefPath_m++;
-
-			string str = node->str_m;
-
-			if (source->edges_m[0].destdir() == R)
-			{
-				str = CanonicalMer_t::rc(str);
-			}
-
-
-			VERBOSE = 1;
-
-			if (VERBOSE) { cerr << "partial align" << endl; }
-
-			if (VERBOSE) { cerr << "alignment" << endl; }
-			if (VERBOSE) { cerr << "r:  " << refseq << endl; }
-			if (VERBOSE) { cerr << "p:  " << str << endl; }
-
-			// Get alignment
-			string ref_aln;
-			string path_aln;
-			string cov_aln;
-
-			global_align_aff(refseq, str, ref_aln, path_aln, 1, 0);
-
-			if (VERBOSE) 
-			{ 
-				cerr << "r': " << ref_aln << endl;  
-				cerr << "p': " << path_aln << endl; 
-			}
-
-			VERBOSE = OLD_VERBOSE;
-
-			int match_bp = 0;
-			int snp_bp = 0;
-			int ins_bp = 0;
-			int del_bp = 0;
-
-			assert(ref_aln.length() == path_aln.length());
-
-			for (unsigned int i = 0; i < ref_aln.length(); i++)
-			{
-				if (ref_aln[i] == path_aln[i]) { match_bp++; }
-				else if (ref_aln[i] == '-')    { ins_bp++; }
-				else if (path_aln[i] == '-')   { del_bp++; }
-				else                           { snp_bp++; }
-			}
-
-			cerr << ">sp" << complete
-				<< " match: " << match_bp
-				<< " snp: " << snp_bp
-				<< " ins: " << ins_bp
-				<< " del: " << del_bp
-				<< endl;
-
-			if      ((snp_bp + ins_bp + del_bp) == 0) { perfect++;   }
-			else if ((snp_bp) == 0)                   { withindel++; }
-			else if ((ins_bp + del_bp) == 0)          { withsnps++;  }
-			else                                      { withmix++;   }
-
-			if(printPathsToFile) {
-				fprintf(fp,  ">p_%d len=%d cov=%0.2f mincov=%0.2f maxcov=%0.2f pathlen=%d match=%d snp=%d ins=%d del=%d pathstr=%s\n",
-					complete, (int) str.length(), node->cov_m, node->cov_m, node->cov_m, 1, match_bp, snp_bp, ins_bp, del_bp, "shortmatch");
-				
-				fprintf(fp, "%s\n", str.c_str());
-			}
+			
+			processShortPath(source, ref, fp, printPathsToFile, complete, perfect, withsnps, withindel, withmix);
 		}
 	}
 
@@ -1037,7 +1205,7 @@ string Graph_t::nodeColor(Node_t * cur, string & who)
 
 	map<string, int> whocnt;
 
-	set<ReadId_t>::iterator si;
+	unordered_set<ReadId_t>::const_iterator si;
 	for (si = cur->reads_m.begin(); si != cur->reads_m.end(); si++)
 	{
 		whocnt[readid2info[*si].set_m]++;
@@ -1194,7 +1362,7 @@ void Graph_t::printDot(const string & filename)
 		{
 			fprintf(fp, "  //reads:");
 
-			set<ReadId_t>::iterator ri;
+			unordered_set<ReadId_t>::const_iterator ri;
 
 			for (ri = cur->reads_m.begin(); ri != cur->reads_m.end(); ri++)
 			{
@@ -1685,7 +1853,7 @@ void Graph_t::denovoNodes(const string & filename, const string & refname)
 
 		map<string, int> who;
 
-		set<ReadId_t>::iterator si;
+		unordered_set<ReadId_t>::const_iterator si;
 		for (si = cur->reads_m.begin(); si != cur->reads_m.end(); si++)
 		{
 			string & set = readid2info[*si].set_m;
@@ -1766,7 +1934,8 @@ void Graph_t::countRefPath(const string & filename, const string & refname, bool
 		}
 
 		if (source_m != NULL && sink_m != NULL) {
-			dfs(source_m, sink_m, F, ref_m, fp, printPathsToFile);
+			//dfs(source_m, sink_m, F, ref_m, fp, printPathsToFile);
+			eka(source_m, sink_m, F, ref_m, fp, printPathsToFile);
 		}
 		alignRefNodes();
 
@@ -1921,7 +2090,7 @@ void Graph_t::compressNode(Node_t * node, Ori_t dir)
 		node->cov_m = ((ncov * amerlen) + (ccov * bmerlen)) / (amerlen + bmerlen);
 
 		// reads
-		set<ReadId_t>::iterator ri;
+		unordered_set<ReadId_t>::const_iterator ri;
 		for (ri = buddy->reads_m.begin(); ri != buddy->reads_m.end(); ri++)
 		{
 			node->reads_m.insert(*ri);
@@ -2393,7 +2562,7 @@ void Graph_t::threadReads()
 						if (VERBOSE) cerr << "mates: " << endl;
 
 						set<ReadId_t> mateoverlap;
-						set<ReadId_t>::iterator s1, s2;
+						unordered_set<ReadId_t>::const_iterator s1, s2;
 
 						for (s1 =  n1->reads_m.begin();
 						s1 != n1->reads_m.end();

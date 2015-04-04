@@ -55,14 +55,14 @@ int Path_t::pathlen()
 //////////////////////////////////////////////////////////////
 
 string Path_t::str()
-{
+{	
 	string retval;
 	Ori_t dir = Edge_t::edgedir_start(edgedir_m[0]);
 
 	for (unsigned int i = 0; i < nodes_m.size(); i++)
-	{
+	{				
 		Node_t * n = nodes_m[i];
-
+		
 		string nstr = n->str_m;
 
 		if (dir == R)
@@ -88,7 +88,7 @@ string Path_t::str()
 			dir = Edge_t::edgedir_dest(edgedir_m[i]);
 		}
 	}
-
+	
 	return retval;
 }
 

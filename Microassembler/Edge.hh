@@ -28,6 +28,7 @@ class Edge_t
 {
 public:
 
+	int flag;
 	Mer_t nodeid_m;
 	Edgedir_t dir_m;
 	vector<ReadId_t> readids_m;
@@ -35,9 +36,11 @@ public:
 
 	Edge_t(Mer_t nodeid, Edgedir_t dir)
 		: nodeid_m(nodeid), dir_m(dir)
-		{  }
+		{ flag = 0; }
 	~Edge_t() { };
-		
+	
+	int getFlag() {return flag; }
+	void setFlag(int i) { flag = i; }
 	Ori_t startdir() { return edgedir_start(dir_m); }
 	Ori_t destdir() { return edgedir_dest(dir_m); }
 	string label() { return toString(dir_m) + ":" +  nodeid_m; }

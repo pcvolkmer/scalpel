@@ -44,7 +44,7 @@ public:
 
 	void set(Mer_t mer)
 	{
-		Mer_t rmer = rc(mer);
+		Mer_t rmer = rc2(mer);
 
 		if (mer < rmer)
 		{
@@ -83,6 +83,26 @@ public:
 
 		return retval;
 	}
+	
+	
+	static Mer_t rc2(const Mer_t & mer) {
+	    unsigned char c;
+ 	   
+	   	int i = 0;
+		int j = mer.length()-1;
+	   	Mer_t retval = mer;
+		
+		while(i<=j) {
+ 
+			c = rrc(retval[i]);
+			retval[i]= rrc(retval[j]);
+			retval[j] = c;
+			i++; j--;
+	    }
+		
+		return retval;
+	}
+	
 };
 
 

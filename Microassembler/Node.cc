@@ -285,7 +285,7 @@ int Node_t::cntReadCode(char code)
 {
 	int retval = 0;
 
-	set<ReadId_t>::iterator si;
+	unordered_set<ReadId_t>::iterator si;
 	for (si = reads_m.begin();
 	si != reads_m.end();
 	si++)
@@ -347,9 +347,9 @@ int Node_t::minCov()
 int Node_t::readOverlaps(const Node_t & other)
 {
 	int retval = 0;
-	set<ReadId_t>::iterator it;
+	unordered_set<ReadId_t>::const_iterator it;
 	
-	for (it = other.reads_m.begin(); it != other.reads_m.end(); it++) {
+	for (auto it = other.reads_m.begin(); it != other.reads_m.end(); it++) {
 
 		if (reads_m.find(*it) != reads_m.end())
 		{

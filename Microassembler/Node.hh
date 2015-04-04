@@ -15,6 +15,7 @@
 #include <fstream>
 #include <string>
 #include <assert.h>
+#include <unordered_set>
 
 #include "Mer.hh"
 #include "Ref.hh"
@@ -49,7 +50,7 @@ public:
 
 	vector<int> cov_distr;
 	vector<Edge_t> edges_m;
-	set<ReadId_t> reads_m;
+	unordered_set<ReadId_t> reads_m;
 	vector<ReadStart_t> readstarts_m;
 	ContigLinkMap_t contiglinks_m;
 	ReadInfoList_t * readid2info;

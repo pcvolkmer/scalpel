@@ -146,14 +146,14 @@ bool isAlmostRepeat(const string & seq, int K, int max)
 {
 	bool result = false;
 	
-	set<string> mers;
-
 	int end = seq.length() - K;
 	for (int offset = 0; offset < end; offset++)
 	{
-		string s = seq.substr(offset,K);
+		//string s = seq.substr(offset,K);
 
-		if(kMismatch(s,seq,offset+1,max)) {
+		int start = offset;
+		int end = offset + K;
+		if(kMismatch(start,end,seq,offset+1,max)) {
 			result = true;
 			break;
 		}
@@ -161,22 +161,27 @@ bool isAlmostRepeat(const string & seq, int K, int max)
 	return result;	
 }
 
-bool kMismatch(const string & p, const string & t, int start, int max) { // p==pattern, t==text
+bool kMismatch(size_t s, size_t e, const string & t, size_t start, int max) { // p==pattern, t==text
 	bool flag;
 	int count;
 	size_t i=start;
-	while(i<(t.size()-p.size()+1)) {
+	size_t L = e-s+1;
+	//while(i<(t.size()-p.size()+1)) {
+	while(i<(t.size()-L+1)) {
 		flag = true;
 		count = 0;
 		size_t j=0;
-		while(j<p.size() && i+j<t.size()) {
-			if(t[i+j] != p[j]) {
+		//while(j<p.size() && i+j<t.size()) {
+		while(j<L && i+j<t.size()) {
+			//if(t[i+j] != p[j]) {
+			if(t[i+j] != t[s+j]) {
 				count++;
 				if(count>max) { flag = false; break; }
 			}
 			j++;
 		}
-		if(flag && j==p.size()) { return true; }
+		//if(flag && j==p.size()) { return true; }
+		if(flag && j==L) { return true; }
 		i++;
 	}
 	return false;
