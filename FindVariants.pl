@@ -893,10 +893,13 @@ sub extractVariantsFromPath {
 			$mut->{altcov} = 0;
 			$mut->{inheritance} = "na";
 		
-			my $ref_encoded = md5_hex($ref);
-			my $qry_encoded = md5_hex($qry);
+			#my $ref_encoded = md5_hex($ref);
+			#my $qry_encoded = md5_hex($qry);
 					
-			my $key = sprintf("%s:%d:%s:%d:%s:%s", $chr, $pos, $t, $l, $ref_encoded, $qry_encoded);
+			#my $key = sprintf("%s:%d:%s:%d:%s:%s", $chr, $pos, $t, $l, $ref_encoded, $qry_encoded);
+			my $key_long = sprintf("%s:%d:%s:%d:%s:%s", $chr, $pos, $t, $l, $ref, $qry);
+			my $key = md5_hex($key_long);
+			
 			my $loc = sprintf("%s:%d", $chr, $pos);
 			#print "$key\n";
 

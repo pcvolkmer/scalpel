@@ -1,7 +1,7 @@
 BAMTOOLS_DIR := ../bamtools-2.3.0/
 ABS_BAMTOOLS_DIR := $(realpath $(BAMTOOLS_DIR))
 CXX := g++
-CXXFLAGS := -std=c++0x -Wno-deprecated -Wall -O3 -fexceptions -pg -Wl,-rpath,$(ABS_BAMTOOLS_DIR)/lib/
+CXXFLAGS := -std=c++0x -Wno-deprecated -Wall -O3 -fexceptions -g -Wl,-rpath,$(ABS_BAMTOOLS_DIR)/lib/
 INCLUDES := -I$(ABS_BAMTOOLS_DIR)/include/ -L$(ABS_BAMTOOLS_DIR)/lib/
 
 all: Microassembler

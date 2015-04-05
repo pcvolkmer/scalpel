@@ -50,6 +50,9 @@ void Graph_t::loadSequence(int readid, const string & seq, bool isRef, int trim5
 
 	CanonicalMer_t uc;
 	CanonicalMer_t vc;
+	
+	MerTable_t::iterator ui;
+	MerTable_t::iterator vi;
 
 	unordered_set<Mer_t> readmers;
 
@@ -57,14 +60,26 @@ void Graph_t::loadSequence(int readid, const string & seq, bool isRef, int trim5
 	int offset = 0;
 	for (; offset < end; offset++)
 	{
-		uc.set(seq.substr(offset,   K));
-		vc.set(seq.substr(offset+1, K));
+		if (offset == 0) {
+			uc.set(seq.substr(offset,   K));
+			vc.set(seq.substr(offset+1, K));
+		}
+		else {
+			uc = vc;
+			vc.set(seq.substr(offset+1, K));
+		}
 
 		//cerr << readid << "\t" << offset << "\t" << uc << "\t" << vc << endl;
 
-		MerTable_t::iterator ui = nodes_m.find(uc.mer_m);
-		MerTable_t::iterator vi = nodes_m.find(vc.mer_m);
-
+		if (offset == 0) {
+			ui = nodes_m.find(uc.mer_m);
+			vi = nodes_m.find(vc.mer_m);
+		}
+		else {
+			ui = vi;
+			vi = nodes_m.find(vc.mer_m);
+		}
+			
 		if (ui == nodes_m.end())
 		{
 			ui = nodes_m.insert(make_pair(uc.mer_m, new Node_t(uc.mer_m))).first; 
