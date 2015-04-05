@@ -75,6 +75,7 @@ my %candidates;
 my %exons;
 my %locations;
 my %families;
+my %partitions;
 
 my %fatherCov;
 my %motherCov;
@@ -694,7 +695,7 @@ sub exportSVs {
 sub callMutFromAlignment {
 	
 	print STDERR "-- Calling mutations from alignments (samtools/bcftools)\n";
-			
+	
 	my $cnt = 0;
 	if($selected ne "null") {
 		$cnt = loadCoordinates("$selected", \%exons, $VERBOSE);
@@ -702,40 +703,96 @@ sub callMutFromAlignment {
 	else {
 		$cnt = loadRegions("$BEDFILE", \%exons, $radius, $VERBOSE);		
 	}
+	# split region in $MAX_PROCESSES of eqaul size
+	my $step = $cnt;
+	if ($MAX_PROCESSES>0) {
+		$step = ceil($cnt/$MAX_PROCESSES);
+	}
+	print STDERR "stepSize: $step\n";
+	
+	my $num_partititons=1; 
+	my $count = 0;
+	foreach my $k (keys %exons) { # for each chromosome
+		foreach my $exon (@{$exons{$k}}) { # for each exon
+			if($count>=$step) { 
+				$num_partititons++; 
+				push @{$partitions{$num_partititons}}, $exon; 
+				$count = 1; # reset counter
+			}
+			else { 
+				push @{$partitions{$num_partititons}}, $exon; 
+				$count++;
+			}
+		}
+	}
+	
+	# run parallel jobs
+	my $pm = new Parallel::ForkManager($MAX_PROCESSES);
+	for(my $i = 1; $i <= $num_partititons; $i++) {
+	
+		my $pid = $pm->start and next;
+
+		my $size = scalar(@{$partitions{$i}});
+		print STDERR "Alignment analysis $i [$size].\n";
 		
+		alignmentAnalysis($i);
+		
+		$pm->finish; # Terminates the child process
+	}
+	$pm->wait_all_children; # wait for all parallel jobs to complete
+	
+	
+	# merge results
+	for(my $i = 1; $i <= $num_partititons; $i++) {
+		foreach my $ID (@parents) {
+
+			my $outvcf = "$WORK/$ID/aln.$i.vcf";	
+		
+			if($ID eq "dad") { loadVCF($outvcf, \%alnHashDad, $REF); }
+			if($ID eq "mom") { loadVCF($outvcf, \%alnHashMom, $REF); }
+			
+			runCmd("remove align file ($ID)", "rm $outvcf");
+		}
+	}
+}
+
+## analize alignments
+#####################################################
+sub alignmentAnalysis {
+	
+	my $p = $_[0];	
+	
+	my $commandN = "";
+	my $commandT = "";
+
 	foreach my $ID (@parents) {
 	
-		my $outvcf = "$WORK/$ID/aln.vcf";
-		open FILE, "> $outvcf" or die "Can't open $outvcf ($!)\n"; print FILE "";
+		my $outvcf = "$WORK/$ID/aln.$p.vcf";	
+		open FILE, "> $outvcf" or die "Can't open $outvcf ($!)\n"; print FILE "";	
 		
 		my $bam_path;
 		if($ID eq "dad") { $bam_path = File::Spec->rel2abs($BAMDAD); }
 		if($ID eq "mom") { $bam_path = File::Spec->rel2abs($BAMMOM); }
 	
-		foreach my $k (keys %exons) { # for each chromosome
-			foreach my $exon (@{$exons{$k}}) { # for each exon	
-				
-				my $chr = $exon->{chr};
-				my $start = $exon->{start};
-				my $end = $exon->{end};
+		foreach my $exon (@{$partitions{$p}}) { # for each exon			
 			
-				## extend region left and right by radius
-				my $left = $start-$radius;
-				if ($left < 0) { $left = $start; }
-				my $right = $end+$radius;
+			my $chr = $exon->{chr};
+			my $start = $exon->{start};
+			my $end = $exon->{end};
+		
+			## extend region left and right by radius
+			my $left = $start-$radius;
+			if ($left < 0) { $left = $start; }
+			my $right = $end+$radius;
+		
+			my $REG = "$chr:$left-$right";
+			#print STDERR "$REG\n";
 			
-				my $REG = "$chr:$left-$right";
-				#print STDERR "$REG\n";
-				 
-				my $command = "$samtools mpileup -Q 0 -F 0.0 -r $REG -uf $REF $bam_path | $bcftools call -p 1.0 -P 0 -V snps -Am - | awk '\$0!~/^#/' >> $outvcf";
-				
-				runCmd("samtools/bcftools calling", "$command");
-			}
+			my $command = "$samtools mpileup -Q 0 -F 0.0 -r $REG -uf $REF $bam_path | $bcftools call -p 1.0 -P 0 -V snps -Am - | awk '\$0!~/^#/' >> $outvcf";
+			
+			runCmd("samtools/bcftools calling", "$command");
 		}
-
 		close(FILE);
-		if($ID eq "dad") { loadVCF($outvcf, \%alnHashDad, $REF); }
-		if($ID eq "mom") { loadVCF($outvcf, \%alnHashMom, $REF); }
 	}
 }
 

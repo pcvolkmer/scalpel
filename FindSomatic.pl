@@ -733,6 +733,9 @@ sub callMutFromAlignment {
 		
 		loadVCF($outvcfnormal, \%alnHashN, $REF);
 		loadVCF($outvcftumor, \%alnHashT, $REF);
+		
+		runCmd("remove align file (normal)", "rm $outvcfnormal");
+		runCmd("remove align file (tumor)", "rm $outvcftumor");
 	}
 }
 
@@ -771,6 +774,8 @@ sub alignmentAnalysis {
 		runCmd("samtools/bcftools calling", "$commandN");
 		runCmd("samtools/bcftools calling", "$commandT");
 	}
+	close(FN);
+	close(FT);
 }
 
 ## do the job
