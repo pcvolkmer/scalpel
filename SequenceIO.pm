@@ -322,11 +322,12 @@ sub loadVCF {
 				leftNormalize(\$mut, 300, $REF);
 				#print STDERR "$mut->{chr}\t$mut->{pos}\t$mut->{ref}\t$mut->{seq}\t$mut->{type}\t$mut->{len}\n";
 			
-				my $ref_encoded = md5_hex($mut->{ref});
-				my $qry_encoded = md5_hex($mut->{seq});
+				#my $ref_encoded = md5_hex($mut->{ref});
+				#my $qry_encoded = md5_hex($mut->{seq});
 			
-				my $key = sprintf("%s:%d:%s:%d:%s:%s", $mut->{chr}, $mut->{pos}, $mut->{type}, $mut->{len}, $ref_encoded, $qry_encoded);
-				#print STDERR "$key\n";
+				#my $key = sprintf("%s:%d:%s:%d:%s:%s", $mut->{chr}, $mut->{pos}, $mut->{type}, $mut->{len}, $ref_encoded, $qry_encoded);
+				my $key_long = sprintf("%s:%d:%s:%d:%s:%s", $mut->{chr}, $mut->{pos}, $mut->{type}, $mut->{len}, $mut->{ref}, $mut->{seq});
+				my $key = md5_hex($key_long);
 			
 				if( !(exists $hash->{$key}) ) {
 					$hash->{$key} = $mut;
