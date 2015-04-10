@@ -27,6 +27,7 @@ use Digest::MD5 qw(md5_hex);
 #use IO::Uncompress::Gunzip qw(gunzip $GunzipError);
 use Getopt::Long;
 use File::Spec;
+use File::Basename;
 
 use MLDBM::Sync;						# this gets the default, SDBM_File
 use MLDBM qw(DB_File Storable);			# use Storable for serializing
@@ -249,6 +250,7 @@ sub run {
 	
 	# get absolute path
 	my $bam_abs_path = File::Spec->rel2abs($bamfile);
+	my($file,$dir,$ext) = fileparse($bam_abs_path, qr/\.[^.]*/);
 
 	## link the input files	
     if (-e $bam_abs_path) { 
@@ -259,8 +261,14 @@ sub run {
 		next;
     }
 
-    if (-e "$bam_abs_path.bai") {
-		symlink "$bam_abs_path.bai", "$fdir/bamfile.bam.bai";
+	my $bai1 = "$dir/$file.bai";
+	my $bai2 = "$dir/$file.bam.bai";
+	
+    if (-e "$bai1") {
+		symlink "$bai1", "$fdir/bamfile.bam.bai";
+    }
+	elsif (-e "$bai2") {
+		symlink "$bai2", "$fdir/bamfile.bam.bai";
     }
     else {
 		print STDERR "Indexing BAM file...\n";
