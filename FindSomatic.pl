@@ -729,13 +729,13 @@ sub callMutFromAlignment {
 	for(my $i = 1; $i <= $num_partititons; $i++) {
 		
 		my $outvcfnormal = "$WORK/normal/aln.$i.vcf";
-		my $outvcftumor = "$WORK/tumor/aln.$i.vcf";
+		#my $outvcftumor = "$WORK/tumor/aln.$i.vcf";
 		
 		loadVCF($outvcfnormal, \%alnHashN, $REF);
-		loadVCF($outvcftumor, \%alnHashT, $REF);
+		#loadVCF($outvcftumor, \%alnHashT, $REF);
 		
 		runCmd("remove align file (normal)", "rm $outvcfnormal");
-		runCmd("remove align file (tumor)", "rm $outvcftumor");
+		#runCmd("remove align file (tumor)", "rm $outvcftumor");
 	}
 }
 
@@ -746,13 +746,13 @@ sub alignmentAnalysis {
 	my $p = $_[0];	
 	
 	my $commandN = "";
-	my $commandT = "";
+	#my $commandT = "";
 	
 	my $outvcfnormal = "$WORK/normal/aln.$p.vcf";
-	my $outvcftumor = "$WORK/tumor/aln.$p.vcf";
+	#my $outvcftumor = "$WORK/tumor/aln.$p.vcf";
 	
 	open FN, "> $outvcfnormal" or die "Can't open $outvcfnormal ($!)\n"; print FN "";
-	open FT, "> $outvcftumor" or die "Can't open $outvcftumor ($!)\n"; print FT "";
+	#open FT, "> $outvcftumor" or die "Can't open $outvcftumor ($!)\n"; print FT "";
 		
 	foreach my $exon (@{$partitions{$p}}) { # for each exon			
 			
@@ -769,13 +769,13 @@ sub alignmentAnalysis {
 		#print STDERR "$REG\n";
 			 
 		$commandN = "$samtools mpileup -Q 0 -F 0.0 -r $REG -uf $REF $BAMNORMAL | $bcftools call -p 1.0 -P 0 -V snps -Am - | awk '\$0!~/^#/' >> $outvcfnormal";
-		$commandT = "$samtools mpileup -Q 0 -F 0.0 -r $REG -uf $REF $BAMTUMOR | $bcftools call -p 1.0 -P 0 -V snps -Am - | awk '\$0!~/^#/' >> $outvcftumor";
+		#$commandT = "$samtools mpileup -Q 0 -F 0.0 -r $REG -uf $REF $BAMTUMOR | $bcftools call -p 1.0 -P 0 -V snps -Am - | awk '\$0!~/^#/' >> $outvcftumor";
 			
 		runCmd("samtools/bcftools calling", "$commandN");
-		runCmd("samtools/bcftools calling", "$commandT");
+		#runCmd("samtools/bcftools calling", "$commandT");
 	}
 	close(FN);
-	close(FT);
+	#close(FT);
 }
 
 ## do the job
