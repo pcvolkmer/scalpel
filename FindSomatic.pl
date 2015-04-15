@@ -727,16 +727,30 @@ sub callMutFromAlignment {
 	
 	# run parallel jobs
 	my $pm = new Parallel::ForkManager($MAX_PROCESSES);
+	
+	# Setup a callback for when a child finishes up so we can get it's exit code
+	$pm->run_on_finish( sub {
+	    my ($pid, $exit_code, $ident, $exit_signal, $core_dump) = @_;
+	    print STDERR "** $ident just got out of the pool ".
+		"[PID: $pid | exit code: $exit_code | exit signal: $exit_signal | core dump: $core_dump]\n";
+	});
+
+	# Setup a callback for when a child starts
+	$pm->run_on_start( sub {
+	    my ($pid, $ident) = @_;
+	    print STDERR "** $ident started, pid: $pid\n";
+	});
+	
 	for(my $i = 1; $i <= $num_partititons; $i++) {
 	
-		my $pid = $pm->start and next;
+		my $pid = $pm->start($i) and next;
 
 		my $size = scalar(@{$partitions{$i}});
 		print STDERR "Alignment analysis $i [$size].\n";
 		
 		alignmentAnalysis($i);
 		
-		$pm->finish; # Terminates the child process
+		$pm->finish($i); # Terminates the child process
 	}
 	$pm->wait_all_children; # wait for all parallel jobs to complete
 	

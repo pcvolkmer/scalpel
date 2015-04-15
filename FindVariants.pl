@@ -507,11 +507,25 @@ sub schedule_jobs {
 	for my $k (keys %genome) { delete $genome{$k}; }
 	
 	my $pm = new Parallel::ForkManager($MAX_PROCESSES);
+	
+	# Setup a callback for when a child finishes up so we can get it's exit code
+	$pm->run_on_finish( sub {
+	    my ($pid, $exit_code, $ident, $exit_signal, $core_dump) = @_;
+	    print STDERR "** $ident just got out of the pool ".
+		"[PID: $pid | exit code: $exit_code | exit signal: $exit_signal | core dump: $core_dump]\n";
+	});
+
+	# Setup a callback for when a child starts
+	$pm->run_on_start( sub {
+	    my ($pid, $ident) = @_;
+	    print STDERR "** $ident started, pid: $pid\n";
+	});
+	
 	my $count = 0;
 	for(my $i = 0; $i < $arraySize; $i+=$step) {
 		$count++;
 	
-		my $pid = $pm->start and next;
+		my $pid = $pm->start($i) and next;
 
 		my $s = $i;
 		my $e = min( ($arraySize - 1), ($i + $step-1) );
@@ -520,7 +534,7 @@ sub schedule_jobs {
 		print STDERR "$count. [$s..$e]\n";
 		
 		assemblyRegion($count, $ref_file, \%$hash, $dbm_obj);
-		$pm->finish; # Terminates the child process
+		$pm->finish($i); # Terminates the child process
 	}
 	$pm->wait_all_children; # wait for all parallel jobs to complete
 
