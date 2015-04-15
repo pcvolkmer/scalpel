@@ -253,7 +253,9 @@ sub loadVCF {
     my $file = $_[0];
 	my $hash = $_[1];
 	my $REF  = $_[2];
-    
+	my $FAIDX = $_[3];
+	my $genome = $_[4];
+	
     open VCF, "< $file" or die "Can't open $file ($!)\n";
 
 	my $cnt = 0;
@@ -319,7 +321,7 @@ sub loadVCF {
 				$mut->{type} = $type;
 				$mut->{len}  = $len;
 
-				leftNormalize(\$mut, 300, $REF);
+				leftNormalize(\$mut, 300, $REF, $FAIDX, $genome);
 				#print STDERR "$mut->{chr}\t$mut->{pos}\t$mut->{ref}\t$mut->{seq}\t$mut->{type}\t$mut->{len}\n";
 			
 				#my $ref_encoded = md5_hex($mut->{ref});

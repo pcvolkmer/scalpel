@@ -64,6 +64,8 @@ sub leftNormalize {
 	my $indel = ${$_[0]};
 	my $delta = $_[1];
 	my $REF = $_[2];
+	my $FAIDX = $_[3];
+	my $genome = $_[4];
 	
 	my $pos = $indel->{pos};
 	my $type = $indel->{type};
@@ -74,10 +76,15 @@ sub leftNormalize {
 	#pos = $pos+1; # convert from 0-based to 1-based coordinate system
 	my $l = $pos-$indel_len-$delta;
  	my $r = $pos+$indel_len+$delta;
-	#print "samtools faidx $REF $chr:$l-$r | awk '\$0 ~ /^>/' \n";
-	my $reference = readpipe( "$samtools faidx $REF $chr:$l-$r | awk '\$0 !~ /^>/'" ); # 0-based coordinate system
+		
+	my $reference = "";
+	if ($FAIDX == 0) {
+		$reference = substr($genome->{$chr}->{seq}, $l-1, $r-$l+1);
+	}
+	else {
+		$reference = readpipe( "$samtools faidx $REF $chr:$l-$r | awk '\$0 !~ /^>/'" ); # 0-based coordinate system
+	}
 	$reference=~s/\R//g; #remove newlines
-	#my $reference = substr($genome->{$chr}->{seq}, $l-1, $r-$l+1);
 	#print "samtools faidx $REF $chr:$L-$R\n";
 	#print STDERR "$reference\n";
  	my $p = $indel_len+$delta;

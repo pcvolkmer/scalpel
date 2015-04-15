@@ -42,6 +42,7 @@ my $BAMAFF;
 my $BAMSIB;
 my $BEDFILE;
 my $REF;
+my $USEFAIDX = 0;
 
 my $defaults = getDefaults();  
 
@@ -76,6 +77,7 @@ my %exons;
 my %locations;
 my %families;
 my %partitions;
+my %genome;
 
 my %fatherCov;
 my %motherCov;
@@ -160,6 +162,20 @@ sub init()
 	if( (!defined $BAMDAD) || (!defined $BAMMOM) || (!defined $BAMAFF) || (!defined $BAMSIB) || (!defined $BEDFILE) || (!defined $REF) ) { 
 		print STDERR "Required parameter missing!\n";
 		usageDenovo("FindDenovo.pl"); 
+	}
+	
+	if (-e "$BEDFILE") { $USEFAIDX = 0; }
+	elsif ($BEDFILE =~ m/(\w+):(\d+)-(\d+)/) {
+		#parse region
+		my ($chr,$interval) = split(':',$BEDFILE);
+		my ($start,$end) = split('-',$interval);
+		
+		# use samtools faidx for regions smaller than 1Mb to speed up loading of the sequences
+		if( ($end-$start+1) < 10000) { 
+			#print STDERR "INFO: Region $bedfile is < 10Kb; Using samtools faidx to extract sequences.\n";
+			$USEFAIDX = 1;
+		}
+		else { $USEFAIDX = 0; } 
 	}
 	
 	mkdir $WORK if ! -r $WORK;
@@ -741,15 +757,19 @@ sub callMutFromAlignment {
 	}
 	$pm->wait_all_children; # wait for all parallel jobs to complete
 	
+	# load genome from fasta file (if needed) and pass it to loadVCF()
+	if($USEFAIDX == 0) {
+		loadGenomeFasta($REF, \%genome);
+	}
 	
 	# merge results
 	for(my $i = 1; $i <= $num_partititons; $i++) {
 		foreach my $ID (@parents) {
 
-			my $outvcf = "$WORK/$ID/aln.$i.vcf";	
+			my $outvcf = "$WORK/$ID/aln.$i.vcf";
 		
-			if($ID eq "dad") { loadVCF($outvcf, \%alnHashDad, $REF); }
-			if($ID eq "mom") { loadVCF($outvcf, \%alnHashMom, $REF); }
+			if($ID eq "dad") { loadVCF($outvcf, \%alnHashDad, $REF, $USEFAIDX, \%genome); }
+			if($ID eq "mom") { loadVCF($outvcf, \%alnHashMom, $REF, $USEFAIDX, \%genome); }
 			
 			runCmd("remove align file ($ID)", "rm $outvcf");
 		}

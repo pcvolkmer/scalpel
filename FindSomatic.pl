@@ -40,6 +40,7 @@ my $BAMNORMAL;
 my $BAMTUMOR;
 my $BEDFILE;
 my $REF;
+my $USEFAIDX = 0;
 
 my $defaults = getDefaults();  
 
@@ -73,6 +74,7 @@ my %candidates;
 my %exons;
 my %locations;
 my %partitions;
+my %genome;
 
 my %normalCov;
 my %tumorCov;
@@ -131,7 +133,7 @@ GetOptions(
 	'STcalling!'   => \$STcalling,
 	'outratio=f'   => \$outratio,
 
-) or usageDenovo("FindDenovo.pl");
+) or usageSomatic("FindSomatic.pl");
 
 #####################################################
 #
@@ -145,6 +147,20 @@ sub init()
 	if( (!defined $BAMNORMAL) || (!defined $BAMTUMOR) || (!defined $BEDFILE) || (!defined $REF) ) { 
 		print STDERR "Required parameter missing!\n";
 		usageSomatic("FindSomatic.pl"); 
+	}
+	
+	if (-e "$BEDFILE") { $USEFAIDX = 0; }
+	elsif ($BEDFILE =~ m/(\w+):(\d+)-(\d+)/) {
+		#parse region
+		my ($chr,$interval) = split(':',$BEDFILE);
+		my ($start,$end) = split('-',$interval);
+		
+		# use samtools faidx for regions smaller than 1Mb to speed up loading of the sequences
+		if( ($end-$start+1) < 10000) { 
+			#print STDERR "INFO: Region $bedfile is < 10Kb; Using samtools faidx to extract sequences.\n";
+			$USEFAIDX = 1;
+		}
+		else { $USEFAIDX = 0; } 
 	}
 	
 	mkdir $WORK if ! -r $WORK;
@@ -724,6 +740,11 @@ sub callMutFromAlignment {
 	}
 	$pm->wait_all_children; # wait for all parallel jobs to complete
 	
+
+	# load genome from fasta file (if needed) and pass it to loadVCF()
+	if($USEFAIDX == 0) {
+		loadGenomeFasta($REF, \%genome);
+	}
 	
 	# merge results
 	for(my $i = 1; $i <= $num_partititons; $i++) {
@@ -731,7 +752,7 @@ sub callMutFromAlignment {
 		my $outvcfnormal = "$WORK/normal/aln.$i.vcf";
 		#my $outvcftumor = "$WORK/tumor/aln.$i.vcf";
 		
-		loadVCF($outvcfnormal, \%alnHashN, $REF);
+		loadVCF($outvcfnormal, \%alnHashN, $REF, $USEFAIDX, \%genome);
 		#loadVCF($outvcftumor, \%alnHashT, $REF);
 		
 		runCmd("remove align file (normal)", "rm $outvcfnormal");
