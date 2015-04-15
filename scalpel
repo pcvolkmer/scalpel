@@ -71,7 +71,7 @@ my $dfs_limit = $defaults->{pathlimit};
 # output arguments
 my $intarget;
 my $logs;
-my $validate;
+my $twopass;
 my $min_cov = $defaults->{min_cov};
 my $max_cov = $defaults->{max_cov};
 my $min_chi2 = $defaults->{minchi2};
@@ -175,7 +175,7 @@ GetOptions(
 	'type=s'       => \$SVtype,
 	'intarget!'    => \$intarget,
 	'logs!'   	   => \$logs,
-	'validate!'    => \$validate,
+	'two-pass!'    => \$twopass,
 
 ) or usage();
 
@@ -328,7 +328,7 @@ sub init()
 				print STDERR "\n***MAIN ANALYSIS***\n";
 				runCmd("FindDenovos", $command_main);
 			
-				if($validate) {
+				if($twopass) {
 			
 					# extract coordinates of candidate mutation
 					#my $infile = "";
@@ -355,7 +355,7 @@ sub init()
 					$dfs_limit = 1000000;
 			
 					# run validation of candidates
-					my $DIR_val = "$ABS_WORK/validation";
+					my $DIR_val = "$ABS_WORK/twopass";
 					my $command_val = "$findDenovos ".
 						"--dad $BAMDAD ".
 						"--mom $BAMMOM ".
@@ -386,7 +386,7 @@ sub init()
 					$command_val .= " --STcalling";
 			
 					print STDERR "Command: $command_val\n" if($VERBOSE);
-					print STDERR "\n***VALIDATION PHASE***\n";
+					print STDERR "\n***TWO-PASS PHASE***\n";
 					runCmd("FindDenovos", $command_val);
 				
 					#copy denovo indels to main directory
@@ -450,7 +450,7 @@ sub init()
 				print STDERR "\n***MAIN ANALYSIS***\n";
 				runCmd("FindSomatic", $command_main);
 			
-				if($validate) {
+				if($twopass) {
 			
 					# extract coordinates of candidate mutation
 					#my $infile = "";
@@ -479,7 +479,7 @@ sub init()
 					$dfs_limit = 1000000;
 			
 					# run validation of candidates
-					my $DIR_val = "$ABS_WORK/validation";
+					my $DIR_val = "$ABS_WORK/twopass";
 					my $command_val = "$findSomatic ".
 						"--normal $BAMNORMAL ".
 						"--tumor $BAMTUMOR ".
@@ -508,7 +508,7 @@ sub init()
 					$command_val .= " --STcalling";
 			
 					print STDERR "Command: $command_val\n" if($VERBOSE);
-					print STDERR "\n***VALIDATION PHASE***\n";
+					print STDERR "\n***TWO-PASS PHASE***\n";
 					runCmd("FindSomatic", $command_val);
 			
 					#copy somatic indels to main directory

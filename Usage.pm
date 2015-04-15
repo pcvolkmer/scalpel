@@ -155,7 +155,7 @@ OPTIONS:
     --logs             : keep log files
     --mincov <int>     : minimum coverage for exporting mutation to file [default $defaults{min_cov}]
     --outratio <float> : minimum coverage ratio for exporting mutation to file (default: $defaults{outratio})
-    --validate         : run validation step
+    --two-pass         : perform second pass of analysis to confirm candidate calls
 	
 
   Note 1: the list of de novo INDELs is saved in file: OUTDIR/denovos.*.indel.*
@@ -213,7 +213,7 @@ OPTIONS:
     --logs                : keep log files
     --mincov <int>        : minimum coverage for exporting mutation to file [default $defaults{min_cov}]
     --outratio <float>    : minimum coverage ratio for exporting mutation to file (default: $defaults{outratio})
-    --validate            : run validation step
+    --two-pass            : perform second pass of analysis to confirm candidate calls
 	
   Note 1: the list of somatic INDELs is saved in file: OUTDIR/somatic.*.indel.* 
   where OUTDIR is the output directory selected with option "--dir" [default $defaults{WORK}].
@@ -259,6 +259,9 @@ OPTIONS:
   Supported output formats:
     1. annovar
     2. vcf
+	
+    NOTE: The database.db file can be found in the output directory for the single operation 
+    mode or in the correspective subdirectories ("main" and "twopass' for denovo and soamtic modes).
 
 END
 exit;
