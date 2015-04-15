@@ -1,4 +1,17 @@
 ----------------------------------------------------------
+0.4.1 | Wed April 15 2015
+
+  * improved core algorithm of graph traversal
+  * select min number of (src-to-sink) paths covering every edge of the graph
+  * process each connected component separately
+  * source and sink are seletecd within each component (increased sensitivity)
+  * parallelization of alignments analysis (for "somatic" and "denovo" modes)
+  * several C++ code optimization
+  * changed option --validate to --two-pass. Updated manual and usage info
+  * callbacks to get child exit codes
+  * better detection of .bai index files
+  
+----------------------------------------------------------
 0.3.2 | Tue Jan 14 2015
  
   * speed up thansk to g++ compilation with -O3 optimization flag 
