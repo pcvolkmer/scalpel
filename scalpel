@@ -74,6 +74,7 @@ my $logs;
 my $twopass;
 my $min_cov = $defaults->{min_cov};
 my $max_cov = $defaults->{max_cov};
+my $minCovInMatch = $defaults->{matched_cov};
 my $min_chi2 = $defaults->{minchi2};
 my $max_chi2 = $defaults->{maxchi2};
 my $outratio = $defaults->{outratio};
@@ -156,6 +157,7 @@ GetOptions(
     'lowcov=i'     => \$tip_cov_threshold,
     'mincov=i'     => \$min_cov,
     'maxcov=i'     => \$max_cov,
+    'matchedcov=i' => \$minCovInMatch,
     'minchi2=f'    => \$min_chi2,	
     'maxchi2=f'    => \$max_chi2,	
     'covratio=f'   => \$covratio,
@@ -220,6 +222,7 @@ sub init()
 					"--ref $REF ".
 					"--mincov $min_cov ".
 					"--maxcov $max_cov ".
+					"--matchedcov $minCovInMatch ".
 					"--covratio $outratio ".
 					"--minchi2 $min_chi2 ".
 					"--maxchi2 $max_chi2 ".

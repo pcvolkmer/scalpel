@@ -30,6 +30,7 @@ my %defaults = (
 	maxmismatch 		=> 3,
 	min_cov 			=> 5,
 	max_cov				=> 1000000,
+	matched_cov         => 10,
 	max_reg_cov			=> 10000,
 	minchi2				=> 0,
 	maxchi2				=> 20,
@@ -251,6 +252,7 @@ OPTIONS:
     --type <text>      : mutation type (snp, del, ins, indel, all: everything) [default $defaults{SVtype}]
     --mincov <int>     : minimum coverage for a mutation to be exported  [default $defaults{min_cov}]
     --maxcov <int>     : maximum coverage for a mutation to be exported  [default $defaults{max_cov}]
+    --matchedcov <int> : minimum total coverage in matched samples (normal/parent) for a mutation to be exported [default $defaults{matched_cov}]
     --minchi2 <float>  : minimum chi-square score for a mutation to be exported [default $defaults{minchi2}]
     --maxchi2 <float>  : maximum chi-square score for a mutation to be exported [default $defaults{maxchi2}]
     --covratio <float> : minimum coverage ratio (AlleleCov/TotCov) for a mutation to be exported to file [default $defaults{outratio}]

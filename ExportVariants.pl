@@ -42,6 +42,7 @@ my $_format  = $defaults->{format};
 my $_SVtype  = $defaults->{SVtype};
 my $_minCov  = $defaults->{min_cov};
 my $_maxCov  = $defaults->{max_cov};
+my $_minCovInMatch = $defaults->{matched_cov};
 my $_minchi2 = $defaults->{minchi2};
 my $_maxchi2 = $defaults->{maxchi2};
 my $_minCovRatio = $defaults->{covratio};
@@ -52,6 +53,7 @@ my $format  = $_format;
 my $SVtype  = $_SVtype;
 my $minCov  = $_minCov;
 my $maxCov  = $_maxCov;
+my $minCovInMatch = $_minCovInMatch;
 my $intarget = $_intarget;
 my $maxchi2 = $_maxchi2;
 my $minchi2 = $_minchi2;
@@ -96,14 +98,15 @@ GetOptions(
     'ref=s' => \$reference,
 
 	# optional paramters
-    'format=s'   => \$format,
-    'type=s'     => \$SVtype,
-    'mincov=i'   => \$minCov,
-    'maxcov=i'   => \$maxCov,
-    'minchi2=f'  => \$minchi2,
-    'maxchi2=f'  => \$maxchi2,
-    'covratio=f' => \$minCovRatio,
-    'intarget!'  => \$intarget,
+    'format=s'     => \$format,
+    'type=s'       => \$SVtype,
+    'mincov=i'     => \$minCov,
+    'maxcov=i'     => \$maxCov,
+    'matchedcov=i' => \$minCovInMatch,
+    'minchi2=f'    => \$minchi2,
+    'maxchi2=f'    => \$maxchi2,
+    'covratio=f'   => \$minCovRatio,
+    'intarget!'    => \$intarget,
 
 ) or usageExport("ExportVariants.pl");
 
@@ -136,6 +139,7 @@ sub printParams {
 	print STDERR "-- SV type: $SVtype\n";
 	print STDERR "-- minimum coverage: $minCov\n";
 	print STDERR "-- maximum coverage: $maxCov\n";
+	print STDERR "-- minimum coverage in normal/parents: $minCovInMatch\n";
 	print STDERR "-- minimum chi-square score: $minchi2\n";
 	print STDERR "-- maximum chi-square score: $maxchi2\n";
 	print STDERR "-- minimum coverage ratio: $minCovRatio\n";
@@ -237,10 +241,33 @@ sub printVariants {
 		$bestState = "na" if !defined $bestState;
 		my $covState = $mut->{covState};
 		$covState = "na" if !defined $covState;
+		
+		# parse covstate to extract cov info in normal/parents
+		my $normal_cov = 1000000000;
+		my $mother_cov = 1000000000;
+		my $father_cov = 1000000000;
+		if($covState ne "na") {
+			my ($REF,$ALT,$OTH) = split("/",$covState);
+			my @R = split(" ", $REF); # reference
+			my @A = split(" ", $ALT); # alternative
+			my @O = split(" ", $OTH); # other
 
+			my $size = scalar(@R);
+			if($size == 2) { # COVSTATE=136,77/0,53/0,0
+				$normal_cov = $R[0] + $A[0] + $O[0];
+			}
+			elsif ($size == 4) { # COVSTATE=26,31,21,38/0,0,16,0/0,0,0,0
+				$mother_cov = $R[0] + $A[0] + $O[0];
+				$father_cov = $R[1] + $A[1] + $O[1];
+			}
+		}
+		
 		#**************** filtering ****************#		
 		next if($mut->{mincov} < $minCov);
 		next if($mut->{mincov} > $maxCov);
+		next if($normal_cov < $minCovInMatch);
+		next if($mother_cov < $minCovInMatch);
+		next if($father_cov < $minCovInMatch);
 		if ($SVtype ne "all") {
 			if($SVtype eq "indel") { next if($mut->{type} eq "snp"); }
 			else { next if($mut->{type} ne $SVtype); }
