@@ -72,7 +72,7 @@ OPTIONS:
 
   Required:
     --bam <BAM file>   : BAM file with the reference-aligned reads
-    --bed <BED file>   : BED file with list of regions in sorted order or single region in format chr:star-end (example: 1:31656613-31656883)
+    --bed <BED file>   : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)		
     --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
@@ -131,7 +131,7 @@ OPTIONS:
     --mom <BAM file>   : mother BAM file
     --aff <BAM file>   : affected child BAM file
     --sib <BAM file>   : sibling BAM file
-    --bed <BED file>   : BED file with list of regions in sorted order or single region in format chr:star-end (example: 1:31656613-31656883)
+    --bed <BED file>   : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)		
     --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
@@ -189,7 +189,7 @@ OPTIONS:
   Required:
     --normal <BAM file>   : normal BAM file
     --tumor  <BAM file>   : tumor BAM file
-    --bed    <BED file>   : BED file with list of regions in sorted order or single region in format chr:star-end (example: 1:31656613-31656883)
+    --bed    <BED file>   : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)	
     --ref    <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
@@ -244,7 +244,7 @@ OPTIONS:
 
   Required:
     --db <file>        : Database of mutations
-    --bed <file>       : BED file with list of regions in sorted order or single region in format chr:star-end (example: 1:31656613-31656883)
+    --bed <file>       : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
     --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
   
   Optional:
@@ -252,7 +252,7 @@ OPTIONS:
     --type <text>      : mutation type (snp, del, ins, indel, all: everything) [default $defaults{SVtype}]
     --mincov <int>     : minimum coverage for a mutation to be exported  [default $defaults{min_cov}]
     --maxcov <int>     : maximum coverage for a mutation to be exported  [default $defaults{max_cov}]
-    --matchedcov <int> : minimum total coverage in matched samples (normal/parent) for a mutation to be exported [default $defaults{matched_cov}]
+    --matchedcov <int> : minimum total coverage in matched samples (normal/parent) for a mutation to be exported (only for --somatic and --denovo) [default $defaults{matched_cov}]
     --minchi2 <float>  : minimum chi-square score for a mutation to be exported [default $defaults{minchi2}]
     --maxchi2 <float>  : maximum chi-square score for a mutation to be exported [default $defaults{maxchi2}]
     --covratio <float> : minimum coverage ratio (AlleleCov/TotCov) for a mutation to be exported to file [default $defaults{outratio}]

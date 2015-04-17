@@ -51,7 +51,7 @@ COMMANDS AND OPTIONS
 
 	  Required:
 	    --bam <BAM file>   : BAM file with the reference-aligned reads
-	    --bed <BED file>   : BED file with list of regions in sorted order or single region in format chr:star-end (example: 1:31656613-31656883)
+	    --bed <BED file>   : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
 	    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
 	  Optional:
@@ -64,7 +64,7 @@ COMMANDS AND OPTIONS
 	    --maxregcov <int>  : maximum average coverage allowed per region [default 10000]
 	    --step <int>       : delta shift for the sliding window (in base-pairs) [default 100]
 	    --mapscore <int>   : minimum mapping quality for selecting reads to assemble [default 1]
-	    --pathlimit <int>  : limit number of sequence paths [default 100000]
+	    --pathlimit <int>  : limit number of sequence paths to [default 1000000]
 	    --mismatches <int> : max number of mismatches in near-perfect repeat detection [default 3]
 	    --dir <directory>  : output directory [default ./outdir]
 	    --numprocs <int>   : number of parallel jobs (1 for no parallelization) [default 1]
@@ -99,7 +99,7 @@ COMMANDS AND OPTIONS
 	    --mom <BAM file>   : mother BAM file
 	    --aff <BAM file>   : affected child BAM file
 	    --sib <BAM file>   : sibling BAM file
-	    --bed <BED file>   : BED file with list of regions in sorted order or single region in format chr:star-end (example: 1:31656613-31656883)
+	    --bed <BED file>   : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
 	    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
 	  Optional:
@@ -112,6 +112,7 @@ COMMANDS AND OPTIONS
 	    --maxregcov <int>  : maximum average coverage allowed per region [default 10000]
 	    --step <int>       : delta shift for the sliding window (in base-pairs) [default 100]
 	    --mapscore <int>   : minimum mapping quality for selecting reads to assemble [default 1]
+	    --pathlimit <int>  : limit number of sequence paths to [default 1000000]
 	    --mismatches <int> : max number of mismatches in near-perfect repeat detection [default 3]
 	    --dir <directory>  : output directory [default ./outdir]
 	    --numprocs <int>   : number of parallel jobs (1 for no parallelization) [default 1]
@@ -123,7 +124,7 @@ COMMANDS AND OPTIONS
 	    --logs             : keep log files
 	    --mincov <int>     : minimum coverage for exporting mutation to file [default 5]
 	    --outratio <float> : minimum coverage ratio for exporting mutation to file (default: 0.05)
-        --two-pass         : perform second pass of analysis to confirm candidate calls
+	    --two-pass         : perform second pass of analysis to confirm candidate calls
 
 
 	  Note 1: the list of de novo INDELs is saved in file: OUTDIR/denovos.*.indel.*
@@ -145,7 +146,7 @@ COMMANDS AND OPTIONS
 	  Required:
 	    --normal <BAM file>   : normal BAM file
 	    --tumor  <BAM file>   : tumor BAM file
-	    --bed    <BED file>   : BED file with list of regions in sorted order or single region in format chr:star-end (example: 1:31656613-31656883)
+	    --bed    <BED file>   : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
 	    --ref    <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
 	  Optional:
@@ -158,6 +159,7 @@ COMMANDS AND OPTIONS
 	    --maxregcov <int>     : maximum average coverage allowed per region [default 10000]
 	    --step <int>          : delta shift for the sliding window (in base-pairs) [default 100]
 	    --mapscore <int>      : minimum mapping quality for selecting reads to assemble [default 1]
+	    --pathlimit <int>     : limit number of sequence paths to [default 1000000]
 	    --mismatches <int>    : max number of mismatches in near-perfect repeat detection [default 3]
 	    --dir <directory>     : output directory [default ./outdir]
 	    --numprocs <int>      : number of parallel jobs (1 for no parallelization) [default 1]
@@ -169,7 +171,7 @@ COMMANDS AND OPTIONS
 	    --logs                : keep log files
 	    --mincov <int>        : minimum coverage for exporting mutation to file [default 5]
 	    --outratio <float>    : minimum coverage ratio for exporting mutation to file (default: 0.05)
-		--two-pass         : perform second pass of analysis to confirm candidate calls
+	    --two-pass            : perform second pass of analysis to confirm candidate calls
 
 	  Note 1: the list of somatic INDELs is saved in file: OUTDIR/somatic.*.indel.*
 	  where OUTDIR is the output directory selected with option "--dir" [default ./outdir].
@@ -195,9 +197,9 @@ COMMANDS AND OPTIONS
 	3) --covratio:
 		This is the minimum coverage ratio to export mutations (altCoverage/totalCoverage). 
 		Similarly to the mincov parameter, smaller values will increase sensitivity but reduce specificity.
-	
-	
-	usage: scalpel --export --db <file> --bed <BED file> [OPTIONS]
+		
+		
+	usage: scalpel --export --db <file> --bed <file> [OPTIONS]
 
 	OPTIONS:
 
@@ -206,15 +208,17 @@ COMMANDS AND OPTIONS
 
 	  Required:
 	    --db <file>        : Database of mutations
-	    --bed <file>       : BED file with list of exome-target coordinates
+	    --bed <file>       : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
+	    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
 	  Optional:
 	    --format <text>    : output format for variants (annovar | vcf) [default vcf]
 	    --type <text>      : mutation type (snp, del, ins, indel, all: everything) [default indel]
 	    --mincov <int>     : minimum coverage for a mutation to be exported  [default 5]
 	    --maxcov <int>     : maximum coverage for a mutation to be exported  [default 1000000]
+	    --matchedcov <int> : minimum total coverage in matched samples (normal/parent) for a mutation to be exported (only for --somatic and --denovo) [default 10]
 	    --minchi2 <float>  : minimum chi-square score for a mutation to be exported [default 0]
-	    --maxchi2 <float>  : maximum chi-square score for a mutation to be exported [default 1000000]
+	    --maxchi2 <float>  : maximum chi-square score for a mutation to be exported [default 20]
 	    --covratio <float> : minimum coverage ratio (AlleleCov/TotCov) for a mutation to be exported to file [default 0.05]
 	    --intarget         : export mutations only inside the target regions from the BED file
 
@@ -222,8 +226,10 @@ COMMANDS AND OPTIONS
 	    1. annovar
 	    2. vcf
 
-		The database.db file can be found in the output directory for the single operation 
-		mode or in the correspective subdirectories (main and twopass for denovo and soamtic modes).
+	    NOTE: The database.db file can be found in the output directory for the single operation
+	    mode or in the correspective subdirectories ("main" and "twopass' for denovo and soamtic modes).
+		
+		
 
 ANNOVAR OUTPUT FORMAT
 
