@@ -1,48 +1,45 @@
-NAME
+#### scalpel - micro-assembly variant detection tool ####
 
-	scalpel - micro-assembly variant detection tool
 
-CONTENTS
+###### CONTENTS ######
 
-	Synopsis
-	Description
-	Commands And Options
-	Output Format
-	See Also
-	Author
-	License
-	Citation
+* SYNOPSIS
+* DESCRIPTION
+* COMMANDS AND OPTIONS
+* ANNOVAR OUTPUT FORMAT
+* VCF OUTPUT FORMAT
+* AUTHORS
+* LICENSE
+* CITATION
 
-SYNOPSIS
+###### SYNOPSIS ######
 
-	scalpel --single --bam file.bam --bed file.bed --ref ref.fa [OPTIONS]
+	scalpel --single --bam <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
 
-	scalpel --denovo --dad dad.bam --mom mom.bam --aff aff.bam --sib sib.bam --bed file.bed --ref ref.fa [OPTIONS]
+	scalpel --denovo --dad <BAM file> --mom <BAM file> --aff <BAM file> --sib <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
 
-	scalpel --somatic --normal normal.bam --tumor tumor.bam --bed file.bed --ref ref.fa [OPTIONS]
+	scalpel --somatic --normal <BAM file> --tumor <BAM file> --bed <BEX file> --ref <FASTA file> [OPTIONS]
 	
-	scalpel --export --db <file> --bed <BED file> [OPTIONS]
+	scalpel --export --db <DB file> --bed <BED file> --ref <FASTA file> [OPTIONS]
 
+###### DESCRIPTION ######
 
-DESCRIPTION
+Scalpel is a software package for detection of INDELs (INsertions and DELetions) mutations for 
+next-generation sequencing data (e.g., Illumina). It supports three modes of operation: single, 
+denovo, and somatic. In single mode scalpel detects INDELs in one single dataset (e.g., one individual exome). 
+In denovo mode scalpel detects de novo INDELs in one family of four individuals (mom, dad, aff, sib). 
+In somatic mode scalpel detects somatic INDELs in a tumor/sample pair given in input.
 
-	Scalpel is a software package for detection of INDELs (INsertions and DELetions) mutations for 
-	next-generation sequencing data (e.g., Illumina). It supports three modes of operation: single, 
-	denovo, and somatic. In single mode scalpel detects INDELs in one single dataset (e.g., one individual exome). 
-	In denovo mode scalpel detects de novo INDELs in one family of four individuals (mom, dad, aff, sib). 
-	In somatic mode scalpel detects somatic INDELs in a tumor/sample pair given in input.
+For all the modes of operation, scalpel requires that the raw reads have been previously aligned with 
+BWA using default parameters. See BWA description (at <http://bio-bwa.sourceforge.net/bwa.shtml>) for more info.
 
-	For all the modes of operation, scalpel requires that the raw reads have been previously aligned with 
-	BWA using default parameters. See BWA description (at http://bio-bwa.sourceforge.net/bwa.shtml) for more info.
+###### COMMANDS AND OPTIONS ######
 
+###### single ######
 
-COMMANDS AND OPTIONS
-
-	***Single mode***
+variant calling on single sample.
 
 	usage: scalpel --single --bam <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
-
-	Detect INDELs in one single dataset (e.g., one individual).
 
 	OPTIONS:
 
@@ -83,11 +80,11 @@ COMMANDS AND OPTIONS
 
 	  Note 2: use the export tool (option "--export") to export mutations using different filtering criteria
 
-	***Denovo mode***
+###### denovo ######
+
+call de novo variants in one family of four individuals (mom, dad, aff, sib).
 
 	usage: scalpel --denovo --dad <BAM file> --mom <BAM file> --aff <BAM file> --sib <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
-
-	Detect de novo INDELs in a family of four individuals (mom, dad, aff, sib).
 
 	OPTIONS:
 
@@ -132,11 +129,11 @@ COMMANDS AND OPTIONS
 
 	  Note 2: use the export tool (option "--export") to export mutations using different filtering criteria
 
-	***Somatic mode***
+###### somatic ######
+
+detects somatic indels in a tumor/normal pair.
 	
 	usage: scalpel --somatic --normal <BAM file> --tumor <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
-
-	Detect somatic INDELs in a tumor/normal pair
 
 	OPTIONS:
 
@@ -177,35 +174,18 @@ COMMANDS AND OPTIONS
 	  where OUTDIR is the output directory selected with option "--dir" [default ./outdir].
 
 	  Note 2: use the export tool (option "--export") to export mutations using different filtering criteria
-  
-	***Export***
+
+###### export tool ######
+
+Export mutations from database
 	
-	By default scalpel exports the list of detected indels in a file named variants.*.indel.* in the 
-	selected output directory according to the default filtering parameters. 
-	However it is recommended to explore different filtering criteria using the export tool.
-	The three most important parameters are:
-	1) --mincov
-		By default mutations that have a minimum coverage of 5 are exported.
-		Change this number according to the type of study (germiline, somatic, denovo) and the expected coverage. 
-		Smaller values will give more sensitivity but increase the number of false-positive calls.
-	2) --maxchi2:
-		Chi square test statistic computed using the reference and alternative coverage for the mutation.
-		Larger values will give more sensitivity but produce a large number of false-positives.
-		For germline and denovo discovery we recommend using chi-square score ≤ 20 to export high confidence indels.
-		For somatic discovery instead larger values of chi-square are required to detect low frequency mutations but with reduced 
-		specificity (more false-positives).
-	3) --covratio:
-		This is the minimum coverage ratio to export mutations (altCoverage/totalCoverage). 
-		Similarly to the mincov parameter, smaller values will increase sensitivity but reduce specificity.
-		
-		
 	usage: scalpel --export --db <file> --bed <file> [OPTIONS]
 
 	OPTIONS:
 
 	    --help             : this (help) message
 	    --verbose          : verbose mode
-
+	
 	  Required:
 	    --db <file>        : Database of mutations
 	    --bed <file>       : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
@@ -228,14 +208,29 @@ COMMANDS AND OPTIONS
 
 	    NOTE: The database.db file can be found in the output directory for the single operation
 	    mode or in the correspective subdirectories ("main" and "twopass' for denovo and soamtic modes).
-		
-		
 
-ANNOVAR OUTPUT FORMAT
+By default scalpel exports the list of detected indels in a file named variants.*.indel.* in the 
+selected output directory according to the default filtering parameters. 
+However it is recommended to explore different filtering criteria using the export tool.
+The three most important parameters are:
 
-	The list of candidate mutations is exported according to the following format:
-	
-	[columns 1 to 5 describe the mutation according to the "annovar" format (http://www.openbioinformatics.org/annovar/)]
+1. mincov
+    * By default mutations that have a minimum coverage of 5 are exported.
+    * Change this number according to the type of study (germiline, somatic, denovo) and the expected coverage. 
+    * Smaller values will give more sensitivity but increase the number of false-positive calls.
+2. maxchi2
+    * Chi square test statistic computed using the reference and alternative coverage for the mutation.
+    * Larger values will give more sensitivity but produce a large number of false-positives.
+    * For germline and denovo discovery we recommend using chi-square score ≤ 20 to export high confidence indels.
+    * For somatic discovery instead larger values of chi-square are required to detect low frequency mutations but with reduced specificity (more false-positives).
+3. covratio
+    * This is the minimum coverage ratio to export mutations (altCoverage/totalCoverage).
+    * Similarly to the mincov parameter, smaller values will increase sensitivity but reduce specificity.
+
+###### ANNOVAR OUTPUT FORMAT ######
+
+The list of candidate mutations is exported according to the following format.
+Columns 1 to 5 describe the mutation according to the "annovar" format (<http://www.openbioinformatics.org/annovar/>).
 	
 	The columns description are:
 		
@@ -257,34 +252,42 @@ ANNOVAR OUTPUT FORMAT
 	- bestState   : state of the mutations as described below (only for --denovo and --somatic mode)  
 	- covState    : coverage state of the mutation as described below (only for --denovo and --somatic mode)
 	
-	The format of "bestState" for --denovo mode is as follows:
+The format of "bestState" for --denovo mode is as follows:
+
 	"momR dadR affR sibR/momA dadA affA sibA"
-	where (for example) momR stands for the number of copies of the reference allele
-	in the mother’s genotype and affA stands for the number of copies of the alternative
-	allele in the genotype of the affected child.
+
+where (for example) momR stands for the number of copies of the reference allele
+in the mother’s genotype and affA stands for the number of copies of the alternative
+allele in the genotype of the affected child.
 	
-	Similarly, the format of "bestState" for --somatic mode is as follows:
+Similarly, the format of "bestState" for --somatic mode is as follows:
+
 	"normalR tumorR/normalA tumorA"
-	where (for example) normalR stands for the number of copies of the reference allele
-	in the normal’s genotype and tumorA stands for the number of copies of the alternative
-	allele in the genotype of the tumor.
+
+where (for example) normalR stands for the number of copies of the reference allele
+in the normal’s genotype and tumorA stands for the number of copies of the alternative
+allele in the genotype of the tumor.
 	
-	The format of "covState" for --denovo mode is as follows:
+The format of "covState" for --denovo mode is as follows:
+
 	"momRcov dadRcov affRcov sibRcov/momAcov dadAcov affAcov sibAcov"
-	where (for example) "momRcov" stands for the k-mer coverage of the reference allele
-	in the mother’s genotype and "affAcov" stands for the k-mer coverage of the alternative
-	allele in the genotype of the affected child.
+
+where (for example) "momRcov" stands for the k-mer coverage of the reference allele
+in the mother’s genotype and "affAcov" stands for the k-mer coverage of the alternative
+allele in the genotype of the affected child.
 	
-	Similarly, the format of "covState" for --somatic mode is as follows:
+Similarly, the format of "covState" for --somatic mode is as follows:
+
 	"normalRcov tumorRcov/normalAcov tumorAcov"
-	where (for example) "normalRcov" stands for the k-mer coverage of the reference allele
-	in the normal’s genotype and "tumorAcov" stands for the k-mer coverage of the alternative
-	allele in the genotype of the tumor.
+
+where (for example) "normalRcov" stands for the k-mer coverage of the reference allele
+in the normal’s genotype and "tumorAcov" stands for the k-mer coverage of the alternative
+allele in the genotype of the tumor.
 	
-VCF OUTPUT FORMAT
+###### VCF OUTPUT FORMAT ######
 	
-	The list of candidate mutations is exported according to VCF format v4.1.
-	The INFO fields contain the following information (as described in the ANNOVAR format):
+The list of candidate mutations is exported according to VCF format v4.1.
+The INFO fields contain the following information (as described before in the ANNOVAR format):
 	
 	- avgKCov     : average k-mer coverage for the mutation
 	- minKCov     : minimum k-mer coverage for the mutation (can be different from avgKCov for insertions)
@@ -296,23 +299,16 @@ VCF OUTPUT FORMAT
 	- bestState   : state of the mutations as described below (only for --denovo and --somatic mode)  
 	- covState    : coverage state of the mutation as described below (only for --denovo and --somatic mode) 
 
-SEE ALSO
-
-	Scalpel website <http://scalpel.sourceforge.net/>
-	Scalpel SourceForge project page <http://sourceforge.net/projects/scalpel/>
-
-AUTHOR
+###### AUTHORS ######
 
 	Giuseppe Narzisi and Michael C. Schatz, Cold Spring Harbor Laboratory (CSHL).
 
-LICENSE
+###### LICENSE ######
 
 	The Scalpel package is distributed under the MIT License.
 
-Citation
+###### CITATION ######
 
 	Narzisi G., O'Rawe J.A., Iossifov I., Fang H., Lee Y., Wang Z., Wu Y., Lyon G.J., Wigler M., Schatz M.C.
 	Accurate detection of de novo and transmitted INDELs within exome-capture data using micro-assembly
 	Nature Methods (DOI: 10.1038/nmeth.3069)
-	
-	
