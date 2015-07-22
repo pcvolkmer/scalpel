@@ -1,0 +1,727 @@
+#!/usr/bin/env perl
+
+###################################################################
+# ExportVariants.pl
+#
+# Tool for exporting mutations from MLDBM to file
+# 
+#  Author: Giuseppe Narzisi 
+#    Date: December 11, 2013
+#
+###################################################################
+
+use warnings;
+use strict;
+#use POSIX;
+use POSIX qw(strftime);
+use FindBin qw($Bin);
+use lib $Bin; # add $Bin directory to @INC
+use Usage;
+use Utils;
+use SequenceIO;
+use HashesIO;
+use List::Util qw[min max];
+use Getopt::Long;
+use File::Basename;
+use Text::NSP::Measures::2D::Fisher::right;
+
+use MLDBM::Sync;                       # this gets the default, SDBM_File
+use MLDBM qw(DB_File Storable);        # use Storable for serializing
+use MLDBM qw(MLDBM::Sync::SDBM_File);  # use extended SDBM_File, handles values > 1024 bytes
+use Fcntl qw(:DEFAULT);                # import symbols O_CREAT & O_RDWR for use with DBMs
+
+$|=1;
+
+# required arguments
+my $dbfile;
+my $bedfile;
+my $reference;
+
+my $defaults = getDefaults();  
+
+# defaults
+
+my $version_num = $defaults->{version_num};
+
+# optional arguments (with default values)
+my $format  = $defaults->{format};
+my $SVtype  = $defaults->{SVtype};
+my $minInsSize = $defaults->{minInsSize};
+my $maxInsSize = $defaults->{maxInsSize};
+my $minDelSize = $defaults->{minDelSize};
+my $maxDelSize = $defaults->{maxDelSize};
+my $intarget = 0;
+
+# somatic parameters
+my $minAltCntTumor = $defaults->{minAltCntTumor};
+my $maxAltCntNormal = $defaults->{maxAltCntNormal};
+my $minVafTumor = $defaults->{minVafTumor};
+my $maxVafNormal = $defaults->{maxVafNormal};
+my $minCovTumor = $defaults->{minCovTumor};
+my $maxCovTumor = $defaults->{maxCovTumor};
+my $minCovNormal = $defaults->{minCovNormal};
+my $maxCovNormal = $defaults->{maxCovNormal};
+my $minPhredFisher = $defaults->{minPhredFisher};
+#my $maxPhredFisher = $defaults->{maxPhredFisher};
+
+# denovo parameters
+my $minAltCntAffected = $defaults->{minAltCntAffected};
+my $maxAltCntUnaffected = $defaults->{maxAltCntUnaffected};
+my $minVafAffected = $defaults->{minVafAffected};
+my $maxVafUnaffected = $defaults->{maxVafUnaffected};
+my $minCovAffected = $defaults->{minCovAffected};
+my $maxCovAffected = $defaults->{maxCovAffected};
+my $minCovUnaffected = $defaults->{minCovUnaffected};
+my $maxCovUnaffected = $defaults->{maxCovUnaffected};
+
+# single parameters
+my $minCov = $defaults->{min_cov};
+my $maxCov = $defaults->{max_cov};
+my $maxchi2 = $defaults->{maxchi2};
+my $minchi2 = $defaults->{minchi2};
+# min coverage ratio (AleleCov/TotCov) for a mutation to be considered valid
+# Mutation with coverage ration lower than this are considered sequencing errors.
+my $minCovRatio = $defaults->{covratio};
+
+# Prob	chi2score
+# 0.995	0.0000393
+# 0.975	0.000982
+# 0.20	1.642
+# 0.10	2.706
+# 0.05	3.841
+# 0.025	5.024
+# 0.02	5.412
+# 0.01	6.635
+# 0.005	7.879
+# 0.002	9.550
+# 0.001	10.828
+#my $minchi2  = 10.828;
+
+my %exons;
+my %variants;
+
+my $help;
+my $VERBOSE = 0;
+
+my $single  = 0; # single exome study 
+my $denovo  = 0; # family study (mom,dad,affected,sibling)
+my $somatic = 0; # normal/tumor study
+
+# namse from SM tag from @RG
+my $sample_name = "sample";
+my $tumor_name = "tumor";
+my $normal_name = "normal";
+
+my $argcnt = scalar(@ARGV);
+my $start_time = time;
+
+#####################################################
+#
+# Message about this program and how to use it
+#
+sub header() {
+print STDERR <<END;
+
+Program: scalpel-export (variants export tool)  
+Version: $version_num
+Contact: Giuseppe Narzisi <gnarzisi\@nygenome.org>
+END
+}
+
+#####################################################
+#
+# Message about this program and how to use it
+#
+sub usage() {
+	
+header();
+	
+print STDERR <<END;
+
+usage: scalpel-export <COMMAND> [OPTIONS]
+
+COMMAND:
+
+    --help    : this (help) message
+    --verbose : verbose mode
+
+    --single  : export variants for single exome study 
+    --denovo  : export variants for family study (mom,dad,affected,sibling)
+    --somatic : export variants for normal/tumor study
+
+END
+exit;
+}
+
+#####################################################
+#
+# Command line options processing
+#
+GetOptions(
+	'help!'    => \$help,
+	'verbose!' => \$VERBOSE,
+	
+	# required parameters
+    'single'  => \$single,
+    'denovo'  => \$denovo,
+    'somatic' => \$somatic,
+    
+	# required parameters
+    'db=s'  => \$dbfile,
+    'bed=s' => \$bedfile,
+    'ref=s' => \$reference,
+
+	# optional paramters
+    'output-format=s' => \$format,
+    'variant-type=s'  => \$SVtype,
+    'min-ins-size=i'  => \$minInsSize,
+    'max-ins-size=i'  => \$maxInsSize,
+    'min-del-size=i'  => \$minDelSize,
+    'max-del-size=i'  => \$maxDelSize,
+    'intarget!'    => \$intarget,
+	
+	# somatic parameters
+	'min-alt-count-tumor=i'	=> \$minAltCntTumor,
+	'max-alt-count-normal=i' => \$maxAltCntNormal,
+	'min-vaf-tumor=f'   => \$minVafTumor,
+	'max-vaf-normal=f'  => \$maxVafNormal,
+	'min-coverage-tumor=i'  => \$minCovTumor,
+	'max-coverage-tumor=i'  => \$maxCovTumor,
+	'min-coverage-normal=i' => \$minCovNormal,
+	'max-coverage-normal=i' => \$maxCovNormal,
+	'min-phred-fisher=f' => \$minPhredFisher,
+	#'max-phred-fisher=f' => \$maxPhredFisher,
+	
+	# denovo parameters
+	'min-alt-count-affected=i' => \$minAltCntAffected,
+	'max-alt-count-unaffected=i' => \$maxAltCntUnaffected,
+	'min-vaf-affected=f'   => \$minVafAffected,
+	'max-vaf-unaffected=f'  => \$maxVafUnaffected,
+	'min-coverage-affected=i'  => \$minCovAffected,
+	'max-coverage-affected=i'  => \$maxCovAffected,
+	'min-coverage-unaffected=i' => \$minCovUnaffected,
+	'max-coverage-unaffected=i' => \$maxCovUnaffected,
+	'min-chi2-score=f' => \$minchi2,
+	'max-chi2-score=f' => \$maxchi2,
+	
+	# parameters single
+    'min-alt-count=i'  => \$minCov,
+    'max-alt-count=i'  => \$maxCov,
+    'min-vaf=f'   => \$minCovRatio,
+
+) or usage(); 
+
+#####################################################
+#
+# Command line options processing
+#
+sub init()
+{
+	usage() if ($argcnt < 1);
+	usage() if ($help && ($argcnt==1));
+	
+	if( ($single==0) && ($denovo==0) && ($somatic==0) ) { 
+		print STDERR "Command required!\n";
+		usage(); 
+	}
+	else { 
+		if($single)  {
+			if ($argcnt < 2) {
+				header(); 
+				usageExportSingle("scalpel-export --single");
+			}
+			if( (!defined $dbfile) || (!defined $bedfile) ) { 
+				print STDERR "Required parameter missing!\n";
+				usageExportSingle("scalpel-export --single");
+			}
+		}
+		if($denovo)  { 
+			if ($argcnt < 2) {
+				header(); 
+				usageExportDenovo("scalpel-export --denovo");
+			}
+			if( (!defined $dbfile) || (!defined $bedfile) ) { 
+				print STDERR "Required parameter missing!\n";
+				usageExportDenovo("scalpel-export --denovo");
+			}
+		}
+		if($somatic)  { 
+			if ($argcnt < 2) {
+				header(); 
+				usageExportSomatic("scalpel-export --somatic");
+			}
+			if( (!defined $dbfile) || (!defined $bedfile) ) { 
+				print STDERR "Required parameter missing!\n";
+				usageExportSomatic("scalpel-export --somatic");
+			}
+		}
+	}
+	
+	if ($minCov == 0) { $minCov = -1000000; }	
+	
+	my @suffixes = (".dir",".lock",".pag");
+	my($filename, $dirs, $suffix) = fileparse($dbfile, @suffixes);	
+	#print "$filename\n$dirs\n$suffix\n";
+	$dbfile = $dirs . $filename;
+	print "$dbfile\n";
+}
+
+#####################################################
+
+sub printParams {
+	
+	print STDERR "Parameters: \n";
+	print STDERR "-- db-file: $dbfile\n";
+	print STDERR "-- bed-file: $bedfile\n";
+	print STDERR "-- reference file: $reference\n";
+	print STDERR "-- output format: $format\n";
+	print STDERR "-- SV type: $SVtype\n";
+	print STDERR "-- minimum coverage: $minCov\n";
+	print STDERR "-- maximum coverage: $maxCov\n";
+	#print STDERR "-- minimum coverage in normal/parents: $minCovInMatch\n";
+	print STDERR "-- minimum chi-square score: $minchi2\n";
+	print STDERR "-- maximum chi-square score: $maxchi2\n";
+	print STDERR "-- minimum coverage ratio: $minCovRatio\n";
+	my $txt = "false";
+	if($intarget) { $txt = "true"; }
+	print STDERR "-- in target?: $txt\n\n";
+}
+
+#####################################################
+
+sub extractSampleNames {
+	
+	my $dbFile = $_[0];
+	my %db;
+	
+	my $dbm_obj = tie %db, 'MLDBM::Sync', $dbFile, O_RDONLY, 0640 or print STDERR "Tie unsuccesful!\n";
+
+	# tie once to database, read/write as much as necessary
+	$dbm_obj->Lock;
+	
+	if(exists $db{stats})  { 
+		my $sts = $db{stats}; 
+		if($somatic) {
+			$tumor_name = $sts->{tumor_name};
+			$normal_name = $sts->{normal_name};
+		}
+		if($single) {}
+		if($denovo) {}
+	}
+	else {
+		print "ERROR: no sample info in DB\n";
+	}
+}
+
+sub printHeader {
+	
+	my $mode = $_[0];
+	
+	##  print header if file did not exist (created now)
+	if($mode eq "annovar") { # annovar format
+		#print filters
+		print "##fileformat=ANNOVAR\n";
+		print "##mincov=$minCov\n"; 
+		print "##maxcov=$maxCov\n"; 
+		print "##minchi2=$minchi2\n"; 
+		print "##maxchi2=$maxchi2\n"; 
+		print "##covratio=$minCovRatio\n"; 
+		print "#chr\tstart\tend\tref\tobs\tid\tsize\ttype\tavgKcov\tminKcov\tzygosity\taltKcov\tcovRatio\tchi2score\tinheritance\tbestState\tcovState\n"; 
+	} 
+	if($mode eq "vcf") { # vcf format
+		print "##fileformat=VCFv4.1\n";
+		my $date = strftime "%m/%d/%Y", localtime;
+		print "##fileDate=$date\n";
+		print "##source=scalpel$defaults->{version_num}\n";		
+		print "##reference=$reference\n";
+
+		print "##INFO=<ID=AVGCOV,Number=1,Type=Float,Description=\"average k-mer coverage\">\n";
+		print "##INFO=<ID=MINCOV,Number=1,Type=Integer,Description=\"minimum k-mer coverage of non-reference allele\">\n";
+		print "##INFO=<ID=ALTCOV,Number=1,Type=Integer,Description=\"k-mer coverage of reference + any other allele (different from current non-reference) at locus\">\n";
+		print "##INFO=<ID=ZYG,Number=1,Type=String,Description=\"zygosity\">\n";
+		print "##INFO=<ID=COVRATIO,Number=1,Type=Float,Description=\"coverage ratio [(MINCOV)/(ALTCOV+MINCOV)]\">\n";
+		print "##INFO=<ID=CHI2,Number=1,Type=Float,Description=\"chi-square score\">\n";
+		print "##INFO=<ID=FISHERPHREDSCORE,Number=1,Type=Float,Description=\"fisher exact test score phred scaled for tumor-normal pairs\">\n";
+		print "##INFO=<ID=INH,Number=1,Type=String,Description=\"inheritance\">\n";
+		print "##INFO=<ID=BESTSTATE,Number=1,Type=String,Description=\"state of the mutation\">\n";
+		print "##INFO=<ID=COVSTATE,Number=1,Type=String,Description=\"coverage state of the mutation\">\n";
+		print "##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=\"Somatic mutation\">\n";
+		print "##FILTER=<ID=MS,Description=\"Microsatellite mutation (format: #LEN#MOTIF)\">\n";
+		print "##FILTER=<ID=lowCov,Description=\"low coverage\">\n";
+		print "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
+		print "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"k-mer Depth\">\n";
+		print "##FORMAT=<ID=AD,Number=.,Type=Integer,Description=\"k-mer depth supporting reference/indel at the site\">\n";
+		
+		#print filters
+		print "##mincov=$minCov\n"; 
+		print "##maxcov=$maxCov\n"; 
+		print "##minchi2=$minchi2\n"; 
+		print "##maxchi2=$maxchi2\n"; 
+		print "##covratio=$minCovRatio\n";
+
+		if($single or $denovo) {
+			print "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t$sample_name\n";
+		}
+		if($somatic) {
+			print "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t$tumor_name\t$normal_name\n";
+		}
+
+	}
+	elsif($mode eq "scalpel") { # scalpel format
+		print "#ID\tchr\tpos\ttype\tlength\tavgKcov\tminKcov\tzygosity\tref\tobs\taltKcov\tloglikelihood\tchi2score\tinheritance\tbestState\tcovState\n"; 
+	}
+}
+
+## print de novo indels and check how how many are detected correctly
+##########################################
+sub printVariants {
+	
+	my $mode = $_[0];
+	
+	my $num_snp = 0;
+	my $num_ins = 0;
+	my $num_del = 0;
+
+	my $num_transitions = 0;
+	my $num_transversions = 0;
+
+	# prints denovo SVs to file
+	foreach my $key (sort { bychrpos($a,$b,\%variants) } keys %variants) {
+		#print "$key\n";
+		my $mut = $variants{$key};
+				
+		my $family = $mut->{fam};
+		$family = "na" if !defined $family;
+		my $id = $mut->{id};
+		$id = "na" if !defined $id;
+		my $chr = $mut->{chr};
+		my $pos = $mut->{pos};
+		my $t = $mut->{type};
+		my $l = $mut->{len};
+		my $ref = $mut->{ref};
+		my $qry = $mut->{seq}; 
+		my $prevbpref = $mut->{prevbpref}; 
+		my $prevbpalt = $mut->{prevbpalt}; 
+		my $avgcov = $mut->{avgcov}; 
+		my $mincov = $mut->{mincov}; 
+		my $sta = $mut->{status};
+		my $zyg = $mut->{zygosity};
+		my $altcov = $mut->{altcov};
+		my $inher = $mut->{inheritance};
+		my $bestState = $mut->{bestState};
+		$bestState = "na" if !defined $bestState;
+		my $covState = $mut->{covState};
+		$covState = "na" if !defined $covState;
+		
+		# parse covstate to extract cov info in normal/parents
+		my $mother_cov = 1000000000;
+		my $father_cov = 1000000000;
+		my $affected_cov = 1000000000;
+		my $sibling_cov = 1000000000;
+		my $mother_alt_cnt = 0;
+		my $father_alt_cnt = 0;
+		my $affected_alt_cnt = 0;
+		my $sibling_alt_cnt = 0;
+		my $affected_vaf = 0.0;		
+		my $mother_vaf = 0.0;
+		my $father_vaf = 0.0;
+		my $sibling_vaf = 0.0;
+		
+		my $normal_cov = 1000000000;
+		my $tumor_cov = 1000000000;		
+		my $normal_vaf = 0.0;
+		my $tumor_vaf = 0.0;
+		my $tumor_alt_cnt = 0;
+		my $normal_alt_cnt = 0;
+
+		my @R; # reference
+		my @A; # alternative
+		my @O; # other
+		
+		my $gt;
+		my $gt_tumor;
+		my $gt_normal;
+		
+		my $zyg_normal = "?";
+		my $zyg_tumor = "?";
+		
+		if($covState ne "na") {
+			my ($REF,$ALT,$OTH) = split("/",$covState);
+			@R = split(" ", $REF); # reference
+			@A = split(" ", $ALT); # alternative
+			@O = split(" ", $OTH); # other
+
+			my $size = scalar(@R);
+			if($size == 2) { # COVSTATE=136,77/0,53/0,0
+				$normal_cov = $R[0] + $A[0] + $O[0];
+				$tumor_cov = $R[1] + $A[1] + $O[1];
+				$normal_vaf = $A[0]/$normal_cov;		
+				$tumor_vaf = $A[1]/$tumor_cov;
+				$tumor_alt_cnt = $A[1];
+				$normal_alt_cnt = $A[0];	
+			}
+			elsif ($size == 4) { # COVSTATE=26,31,21,38/0,0,16,0/0,0,0,0
+				$mother_cov   = $R[0] + $A[0] + $O[0];
+				$father_cov   = $R[1] + $A[1] + $O[1];
+				$affected_cov = $R[2] + $A[2] + $O[2];
+				$sibling_cov  = $R[3] + $A[3] + $O[3];
+				
+				$mother_alt_cnt = $A[0];
+				$father_alt_cnt = $A[1];
+				$affected_alt_cnt = $A[2];
+				$sibling_alt_cnt = $A[3];
+				
+				$affected_vaf = $A[2]/$affected_cov;		
+				$mother_vaf = $A[0]/$mother_cov;
+				$father_vaf = $A[1]/$father_cov;
+				$sibling_vaf = $A[3]/$sibling_cov;
+			}
+		}
+		
+		my $totcov = $altcov + $mincov;
+		my $covRatio = sprintf('%.2f', ($mincov / $totcov) );
+		
+		#**************** Chi-squared Test ****************#
+		
+		# likelihood (-log p) of the mutation being error given the coverage at that locus		
+		#my $loglikelihood = 0;
+		#if( $prb != 1) { $loglikelihood = sprintf('%.2f', -10*log10(1.0 - $covRatio)); }
+		
+		my $chi2Score = 0;
+		if($single || $denovo) {
+		
+			my $o1 = $mincov; # observed 1
+			my $o2 = $altcov; # observed 2
+			my $e1 = $totcov/2; # expected 1
+			my $e2 = $totcov/2; # expected 2
+		
+			my $term1 = (($o1-$e1)*($o1-$e1))/$e1;
+			my $term2 = (($o2-$e2)*($o2-$e2))/$e2;
+		
+			$chi2Score = sprintf('%.2f', $term1 + $term2);		
+			if($zyg eq "hom") { $chi2Score = 0; }
+			$gt = $zyg eq "het" ? "0/1" : "1/1";
+			#print "$chi2Score\n";
+		}
+		
+		#**************** Fisher exact test ****************#
+        #          cnt2     ~cnt2
+        #  cnt1    n_ref    t_ref | n1p
+        # ~cnt1    n_alt    t_alt | n2p
+        #          --------------
+        #          np1      np2     npp
+		
+		my $fisher_phred_score = 0;
+		
+		if($somatic) {
+			
+			#$R[0] = 10;
+			#$A[0] = 10;
+			#$R[1] = 10;
+			#$A[1] = 30;
+			
+			my $n1p = $R[0]+$R[1];  # n_ref + t_ref
+			my $np1 = $R[0]+$A[0];  # n_ref + n_alt
+			my $n11 = $R[0];        # n_ref
+			my $n2p = $A[0]+$A[1];  # n_alt + t_alt
+			my $np2 = $R[1]+$A[1];  # n_ref + t_alt
+			my $npp = $R[0]+$A[0]+$R[1]+$A[1]; # n_ref + n_alt + t_ref + t_alt
+
+			my $pvalue = calculateStatistic(n11=>$n11, n1p=>$n1p, np1=>$np1, npp=>$npp);
+
+			#-10*log_10(P);			
+			$fisher_phred_score = sprintf('%.2f', -10*Log10($pvalue));
+			#print getStatisticName."Fisher phred score: ".$fisher_phred_score."\n";		
+			
+			#0/0 - the sample is homozygous reference
+			#0/1 - the sample is heterozygous, carrying 1 copy of each of the REF and ALT alleles
+			#1/1 - the sample is homozygous alternate
+			
+			if($R[0]>0 && $A[0]>0) { $zyg_normal = "het"; $gt_normal = "0/1"; }
+			elsif($R[0]==0 && $A[0]>0 && $O[0]==0) { $zyg_normal = "hom"; $gt_normal = "1/1"; }
+			elsif($R[0]>0 && $A[0]==0 && $O[0]==0) { $zyg_normal = "hom"; $gt_normal = "0/0"; }
+			
+			if($R[1]>0 && $A[1]>0) { $zyg_tumor = "het"; $gt_tumor = "0/1"; }
+			elsif($R[1]==0 && $A[1]>0 && $O[1]==0) { $zyg_tumor = "hom"; $gt_tumor = "1/1"; }
+			elsif($R[1]>0 && $A[1]==0 && $O[1]==0) { $zyg_tumor = "hom"; $gt_tumor = "0/0"; }
+		}
+				
+		#**************** filtering ****************#
+		
+		if($SVtype ne "all") {
+			if($SVtype eq "indel") { next if($mut->{type} eq "snp"); }
+			else { next if($mut->{type} ne $SVtype); }
+		}
+		
+		if($mut->{type} eq "ins") { 
+			next if($mut->{len} < $minInsSize); 
+			next if($mut->{len} > $maxInsSize); 
+		}
+		if($mut->{type} eq "del") { 
+			next if($mut->{len} < $minDelSize); 
+			next if($mut->{len} > $maxDelSize); 
+		}		
+		if($single)  {
+			next if($mut->{mincov} < $minCov);
+			next if($mut->{mincov} > $maxCov);
+			next if($covRatio <= $minCovRatio); # skip sequencing errors
+			next if($chi2Score > $maxchi2);
+			next if($chi2Score < $minchi2);
+		}
+		# denovo filtering
+		if($denovo) {
+			next if($mother_cov < $minCovUnaffected);
+			next if($father_cov < $minCovUnaffected);
+			next if($sibling_cov < $minCovUnaffected);
+			next if($affected_cov < $minCovAffected);
+			
+			next if($mother_cov > $maxCovUnaffected);
+			next if($father_cov > $maxCovUnaffected);
+			next if($sibling_cov > $maxCovUnaffected);
+			next if($affected_cov > $maxCovAffected);
+	
+			next if($affected_vaf < $minVafAffected);
+			next if($mother_vaf > $maxVafUnaffected);		
+			next if($father_vaf > $maxVafUnaffected);		
+			next if($sibling_vaf > $maxVafUnaffected);
+			
+			next if($affected_alt_cnt < $minAltCntAffected);
+			next if($mother_alt_cnt > $maxAltCntUnaffected);
+			next if($father_alt_cnt > $maxAltCntUnaffected);
+			next if($sibling_alt_cnt > $maxAltCntUnaffected);
+			
+			next if($chi2Score > $maxchi2);
+			next if($chi2Score < $minchi2);
+		}
+		# somatic filtering
+		if($somatic) {			
+			next if($normal_cov < $minCovNormal);
+			next if($normal_cov > $maxCovNormal);
+			next if($tumor_cov < $minCovTumor);
+			next if($tumor_cov > $maxCovTumor);
+			next if($tumor_vaf < $minVafTumor);
+			next if($normal_vaf > $maxVafNormal);
+			next if($tumor_alt_cnt < $minAltCntTumor);
+			next if($normal_alt_cnt > $maxAltCntNormal);
+			next if($fisher_phred_score < $minPhredFisher);
+			#next if($fisher_phred_score > $maxPhredFisher);
+		}		
+
+		#********************************************#
+		
+		my $annovar_ref = $ref;
+		my $annovar_qry = $qry;
+		my $vcf_ref = $prevbpref . $ref;
+		my $vcf_qry = $prevbpalt . $qry;
+		
+		if($sta eq "ok") { ## only report clean indels...
+			
+			if($t eq "snp") { 
+				$num_snp++;
+				
+				#transitions: A-G, C-T
+				if ( ($ref eq "A") && ($qry eq "G") ||
+				 	 ($ref eq "G") && ($qry eq "A") ||
+					 ($ref eq "C") && ($qry eq "T") ||
+					 ($ref eq "T") && ($qry eq "C") ) {
+						$num_transitions++;
+					}
+				else { $num_transversions++; }
+					
+			}
+			if($t eq "ins") { 
+				$num_ins++; 
+				$annovar_ref = "-";
+				$vcf_ref = $prevbpref;
+			}
+			if($t eq "del") { 
+				$num_del++; 
+				$annovar_qry = "-";
+				$vcf_qry = $prevbpalt;
+			}
+			
+			my $start = $pos;
+			my $end = $pos;
+			if($t eq "del") { $end = $start+$l-1; }
+			my $str;
+			if($mode eq "annovar") { # annovar format
+				$str = sprintf("%s\t%d\t%d\t%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start, $end, $annovar_ref, $annovar_qry, $id, $l, $t, $avgcov, $mincov, $zyg, $altcov, $covRatio, $chi2Score, $fisher_phred_score, $inher, $bestState, $covState);
+			}
+			elsif($mode eq "vcf") { # vcf format	
+				#CHROM POS ID REF ALT QUAL FILTER INFO FORMAT
+ 				my $format_str = "GT:AD:DP";
+				
+				my $normal_residual_cov = "";
+				my $tumor_residual_cov = "";
+				my $format_val = "";
+				my $format_val_normal = "";
+				my $format_val_tumor = "";
+				
+				if($single or $denovo) {
+  					$format_val = "$gt:$altcov,$mincov:$totcov";
+				}
+				if($somatic) {					
+					$normal_residual_cov = $normal_cov - $normal_alt_cnt;
+					$tumor_residual_cov = $tumor_cov - $tumor_alt_cnt;
+  					$format_val_normal = "$gt_normal:$normal_residual_cov,$normal_alt_cnt:$normal_cov";
+  					$format_val_tumor = "$gt_tumor:$tumor_residual_cov,$tumor_alt_cnt:$tumor_cov";
+				}
+				
+				$covState=~s/ /,/g; # no spaces allowed by vcf spec
+  				my $info = "AVGCOV=$avgcov;MINCOV=$mincov;ALTCOV=$altcov;ZYG=$zyg;COVRATIO=$covRatio;CHI2=$chi2Score;FISHERPHREDSCORE:$fisher_phred_score;INH=$inher;BESTSTATE=$bestState;COVSTATE=$covState";
+  				if($t eq "snp") { 
+					if($single or $denovo) {
+						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start, ".", $ref, $qry, ".", ".", $info, $format_str, $format_val); 
+					}
+					elsif($somatic) {
+						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start, ".", $ref, $qry, ".", ".", $info, $format_str, $format_val_tumor, $format_val_normal);
+					}
+				}
+  				else { 
+					if($single or $denovo) {
+						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start-1, ".", $vcf_ref, $vcf_qry, ".", ".", $info, $format_str, $format_val); 
+					}
+					elsif($somatic) {
+						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start-1, ".", $vcf_ref, $vcf_qry, ".", ".", $info, $format_str, $format_val_tumor, $format_val_normal); 
+					}
+				}
+			}
+			else { 
+				$str = sprintf("%s\t%d\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $pos, $t, $l, $avgcov, $mincov, $zyg, $ref, $qry, $id, $altcov, $covRatio, $chi2Score, $fisher_phred_score, $inher, $bestState, $covState);
+			}
+			print  "$str";
+		}
+ 	}	
+	
+	my $ti_tv_ratio = 0;
+	if ($num_transversions != 0) { $ti_tv_ratio = $num_transitions/$num_transversions; }
+	print STDERR "Ti/Tv ratio: $ti_tv_ratio\n" if($VERBOSE);
+
+	my $num_valid = $num_ins+$num_del+$num_snp;
+	print STDERR "Total number of mutations: $num_valid\n" if($VERBOSE);
+	
+	#if($VERBOSE) {
+		print STDERR "[#SNPs: $num_snp | #Ins: $num_ins | #Del: $num_del | Tot: $num_valid]\n";
+	#}
+}
+
+## do the job
+##########################################
+
+init();
+printParams() if ($VERBOSE);
+extractSampleNames($dbfile);
+loadRegions("$bedfile", \%exons, 0, $VERBOSE);
+my $flag = loadDB("$dbfile", \%variants, \%exons, $intarget);
+printHeader("$format");
+if ($flag != -1) {
+	printVariants("$format");
+}
+
+##########################################
+
+my $time_taken = time - $start_time;
+
+#if($VERBOSE) {
+	elapsedTime($time_taken, "ExportVariants");
+#}

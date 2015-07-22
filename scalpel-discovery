@@ -20,8 +20,8 @@ use FindBin qw($Bin);
 use lib $Bin; # add $Bin directory to @INC
 use Usage;
 use SequenceIO;
-use Utils qw(:DEFAULT $findVariants $findDenovos $findSomatic $exportTool $bamtools);
-use File::Path qw(make_path);
+use Utils qw(:DEFAULT $findVariants $findDenovos $findSomatic $bamtools);
+#use File::Path qw(make_path);
 
 use Utils;
 use Getopt::Long;
@@ -35,7 +35,6 @@ my $VERBOSE = 0;
 my $single  = 0; # single exome study 
 my $denovo  = 0; # family study (mom,dad,affected,sibling)
 my $somatic = 0; # normal/tumor study
-my $export  = 0; # export variants to file
 
 # required arguments
 my $BAMFILE;
@@ -93,7 +92,7 @@ my $version_num = $defaults->{version_num};
 sub header() {
 print STDERR <<END;
 
-Program: scalpel (micro-assembly variant detection)
+Program: scalpel-discovery (micro-assembly variant detection)
 Version: $version_num
 Contact: Giuseppe Narzisi <gnarzisi\@nygenome.org>
 END
@@ -109,7 +108,7 @@ header();
 	
 print STDERR <<END;
 
-usage: scalpel <COMMAND> [OPTIONS]
+usage: scalpel-discovery <COMMAND> [OPTIONS]
 
 COMMAND:
 
@@ -119,7 +118,6 @@ COMMAND:
     --single  : single exome study 
     --denovo  : family study (mom,dad,affected,sibling)
     --somatic : normal/tumor study
-    --export  : export variants from DB to file
 
 END
 exit;
@@ -137,7 +135,6 @@ GetOptions(
     'single'  => \$single,
     'denovo'  => \$denovo,
     'somatic' => \$somatic,
-    'export'  => \$export,
 
 	# required parameters
     'bam=s'    => \$BAMFILE,
@@ -191,7 +188,7 @@ sub init()
 	usage() if ($argcnt < 1);	
 	usage() if ($help && ($argcnt==1));	
 		
-	if( ($single==0) && ($denovo==0) && ($somatic==0) && ($export==0) ) { 
+	if( ($single==0) && ($denovo==0) && ($somatic==0) ) { 
 		print STDERR "Command required!\n";
 		usage(); 
 	}
@@ -199,43 +196,9 @@ sub init()
 		
 		my $ABS_WORK = File::Spec->rel2abs($WORK);
 		
-		if($export==0) {
-			make_path("$ABS_WORK") if ! -r $ABS_WORK;
-		}
-		
-		if($export)  {
-			if ($argcnt < 2) {
-				header(); 
-				usageExport("scalpel --export");
-			}
-			usageExport("scalpel --export") if ($help);
-			if( (!defined $DBFILE) || (!defined $BEDFILE) || (!defined $REF) ) { 
-				print STDERR "Required parameter missing!\n";
-				header(); 
-				usageExport("scalpel --export");   
-			}
-			else{ # run ExportVariants.pl on input parameters
-				header(); # print header
-				my $command = "$exportTool ".
-					"--db $DBFILE ".
-					"--bed $BEDFILE ".
-					"--ref $REF ".
-					"--mincov $min_cov ".
-					"--maxcov $max_cov ".
-					"--matchedcov $minCovInMatch ".
-					"--covratio $outratio ".
-					"--minchi2 $min_chi2 ".
-					"--maxchi2 $max_chi2 ".
-					"--format $outformat ".
-					"--type $SVtype";
-				if($VERBOSE) { $command .= " --verbose"; }
-				if($intarget) { $command .= " --intarget"; }
-			
-				print STDERR "Command: $command\n" if($VERBOSE);
-				print STDERR "\n***START EXPORTING***\n";
-				runCmd("ExportVariants", $command);
-			}
-		}
+		#if($export==0) {
+		#	make_path("$ABS_WORK") if ! -r $ABS_WORK;
+		#}
 		
 		if($single)  {
 			if ($argcnt < 2) {
@@ -250,6 +213,10 @@ sub init()
 			}
 			else{ # run FindVariants.pl on input parameters
 				header(); # print header
+				
+				#create main output dir
+				mkdir $ABS_WORK if ! -r $ABS_WORK;	
+				
 				my $command = "$findVariants ".
 					"--bam $BAMFILE ".
 					"--bed $BEDFILE ".

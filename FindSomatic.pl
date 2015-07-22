@@ -87,6 +87,9 @@ my %tumorSVs;
 my %somaticSVs;
 my %commonSVs;
 
+my $tumor_name;
+my $normal_name;
+
 my %alnHashN; # hash of mutations from read alignments for normal
 my %alnHashT; # hash of mutations from read alignments for tumor
 
@@ -580,6 +583,13 @@ sub findSomaticMut {
 	
 	$somatic_dbm_obj->Lock;
 	$common_dbm_obj->Lock;
+	
+	my $stats;
+	$stats->{tumor_name} = $tumor_name;
+	$stats->{normal_name} = $normal_name;
+	$somaticSVs{stats} = $stats;
+	$commonSVs{stats} = $stats;
+		
 	foreach my $k (keys %tumorSVs) {
 				
 		my $mut = $tumorSVs{$k};
@@ -630,20 +640,16 @@ sub exportSVs {
 	
 	print STDERR "-- Exporting SVs to file\n";
 		
-	# export somatic 
-	#runCmd("export all", "$exportTool --db $WORK/somatic.db --bed $BEDFILE --format annovar --type all --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/somatic.${min_cov}x.all.txt");
-	#runCmd("export snp", "$exportTool --db $WORK/somatic.db --bed $BEDFILE --format annovar --type snp --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/somatic.${min_cov}x.snp.txt");
-	#runCmd("export indels", "$exportTool --db $WORK/somatic.db --bed $BEDFILE --format annovar --type indel --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/somatic.${min_cov}x.indel.txt");
+	# export somatic variants
 	
-	my $command_somatic = "$exportTool ".
+	my $command_somatic = "$exportTool --somatic ".
 		"--db $WORK/somatic.db ".
 		"--bed $BEDFILE ".
 		"--ref $REF ".
-		"--format $outformat ".
-		"--type indel ". 
-		"--mincov $min_cov ". 
-		"--maxcov $max_cov ".
-		"--covratio $outratio";
+		"--output-format $outformat ".
+		"--variant-type indel ". 
+		"--min-alt-count-tumor $min_cov ". 
+		"--min-vaf-tumor $outratio";
 	if($intarget) { $command_somatic .= " --intarget"; }
 	if ($outformat eq "annovar") { $command_somatic .= " > $WORK/somatic.${min_cov}x.indel.annovar"; }
 	elsif ($outformat eq "vcf") { $command_somatic .= " > $WORK/somatic.${min_cov}x.indel.vcf"; }
@@ -652,19 +658,15 @@ sub exportSVs {
 	runCmd("export somatic", $command_somatic);
 	
 	# export common variants
-	#runCmd("export all", "$exportTool --db $WORK/common.db --bed $BEDFILE --format annovar --type all --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/common.${min_cov}x.all.txt");
-	#runCmd("export snp", "$exportTool --db $WORK/common.db --bed $BEDFILE --format annovar --type snp --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/common.${min_cov}x.snp.txt");
-	#runCmd("export indels", "$exportTool --db $WORK/common.db --bed $BEDFILE --format annovar --type indel --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/common.${min_cov}x.indel.txt");
 	
-	my $command_comm = "$exportTool ".
+	my $command_comm = "$exportTool --somatic ".
 		"--db $WORK/common.db ".
 		"--bed $BEDFILE ".
 		"--ref $REF ".
-		"--format $outformat ".
-		"--type indel ". 
-		"--mincov $min_cov ". 
-		"--maxcov $max_cov ".
-		"--covratio $outratio";
+		"--output-format $outformat ".
+		"--variant-type indel ". 
+		"--min-alt-count-tumor $min_cov ". 
+		"--min-vaf-tumor $outratio";
 	if($intarget) { $command_comm .= " --intarget"; }
 	if ($outformat eq "annovar") { $command_comm .= " > $WORK/common.${min_cov}x.indel.annovar"; }
 	elsif ($outformat eq "vcf") { $command_comm .= " > $WORK/common.${min_cov}x.indel.vcf"; }
@@ -686,6 +688,15 @@ sub processBAM {
 		callSVs($bamfile, $outdir); # call mutations on each family
 	#}
 	#else { print STDERR "$outdir already processed!\n"; }
+	
+	if($outdir eq "tumor") {
+		$tumor_name = extractSM($WORK,$outdir);
+		#print "SMtumor = $tumor_name\n";	
+	}
+	if($outdir eq "normal") {
+		$normal_name = extractSM($WORK,$outdir);
+		#print "SMnormal = $normal_name\n";	
+	}
 }
 
 ## call mutations from alignments

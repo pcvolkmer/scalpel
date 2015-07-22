@@ -12,7 +12,7 @@ package Utils;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(runCmd leftNormalize uniq binarySearch inTarget bychrpos elapsedTime fisher_yates_shuffle);
+@EXPORT = qw(runCmd leftNormalize uniq binarySearch inTarget bychrpos elapsedTime fisher_yates_shuffle Log10);
 @EXPORT_OK = qw($findVariants $findDenovos $findSomatic $exportTool $bamtools $samtools $bcftools);
 
 use strict;
@@ -25,7 +25,8 @@ use lib $Bin; # add $Bin directory to @INC
 our $findVariants = "$Bin/FindVariants.pl";
 our $findDenovos  = "$Bin/FindDenovos.pl";
 our $findSomatic  = "$Bin/FindSomatic.pl";
-our $exportTool   = "$Bin/ExportVariants.pl";
+#our $exportTool   = "$Bin/ExportVariants.pl";
+our $exportTool   = "$Bin/scalpel-export";
 our $bamtools     = "$Bin/bamtools-2.3.0/bin/bamtools";
 our $samtools     = "$Bin/samtools-1.1/samtools";
 our $bcftools     = "$Bin/bcftools-1.1/bcftools";
@@ -276,9 +277,9 @@ sub fisher_yates_shuffle {
 
 # log 10
 ##########################################
-#sub log10 {
-#        my $n = shift;
-#        return log($n)/log(10);
-#}
+sub Log10 {
+        my $n = shift;
+        return log($n)/log(10);
+}
 
 1;

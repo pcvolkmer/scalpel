@@ -294,23 +294,17 @@ sub run {
 
 sub exportSVs {
 
-	#$exportvars --db $DIR/variants.db --bed $BEDFILE --format annovar --type all --mincov $mincov --maxcov $maxcov > $DIR/variants.txt	
 	print STDERR "-- Exporting SVs to file\n";
-		
-	# export denovos 
-	#runCmd("export denovos", "$exportTool --db $WORK/variants.db --bed $bedfile --format annovar --type all --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/variants.${min_cov}x.all.txt");
-	#runCmd("export denovos", "$exportTool --db $WORK/variants.db --bed $bedfile --format annovar --type snp --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/variants.${min_cov}x.snp.txt");
-	#runCmd("export denovos", "$exportTool --db $WORK/variants.db --bed $bedfile --format annovar --type indel --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/variants.${min_cov}x.indel.txt");
-	
-	my $command = "$exportTool ".
+			
+	my $command = "$exportTool --single ".
 		"--db $WORK/variants.db ".
 		"--bed $bedfile ".
 		"--ref $REF ".
-		"--format $outformat ".
-		"--type indel ". 
-		"--mincov $min_cov ". 
-		"--maxcov $max_cov ".
-		"--covratio $outratio";
+		"--output-format $outformat ".
+		"--variant-type indel ". 
+		"--min-alt-count $min_cov ". 
+		"--max-alt-count $max_cov ".
+		"--min-vaf $outratio";
 	if($intarget) { $command .= " --intarget"; }
 	if ($outformat eq "annovar") { $command .= " > $WORK/variants.${min_cov}x.indel.annovar"; }
 	elsif ($outformat eq "vcf") { $command .= " > $WORK/variants.${min_cov}x.indel.vcf"; }

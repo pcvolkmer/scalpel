@@ -12,7 +12,7 @@ package SequenceIO;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(loadCoordinates loadRegions loadVCF loadExonsBed loadGenomeFasta parseHeader saveReadGroup extractCoords extractCoordsDB);
+@EXPORT = qw(loadCoordinates loadRegions loadVCF loadExonsBed loadGenomeFasta parseHeader saveReadGroup extractCoords extractCoordsDB extractSM);
 
 use strict;
 use warnings;
@@ -393,6 +393,50 @@ sub loadGenomeFasta {
 	#if($VERBOSE) {
 		print STDERR "$cnt sequences.\n";
 	#}
+}
+
+
+## extract SM info from BAM header
+#####################################################
+sub extractSM {
+	 
+	my $PREFIX = $_[0];
+	my $SAMPLE = $_[1];
+	my $headerfile = "header.txt";
+	#my $headerfile = "header.".$SAMPLE.".txt";
+	
+	my $SM = "";
+	
+	## extract header from SAM file
+	#runCmd("extract SAM header", "$bamtools header -in $PREFIX/bamfile.bam > $PREFIX/$headerfile");
+	
+	## read the list of read groups per sample from header
+	open HEADER, "< $PREFIX/$SAMPLE/$headerfile" or die "Can't open $PREFIX/$SAMPLE/$headerfile ($!)\n";
+	
+	while (<HEADER>) {
+		chomp;
+		next if($_ eq ""); # skip empty string
+		next if($_ !~ /^\@/); # skip non-header line
+		
+		my @records = split /\t/, $_;
+	  	if ($records[0] eq "\@RG") {
+			#@RG     ID:READGROUP    SM:SAMPLE
+			
+	  		#print join(' ', @records), "\n";
+	  		
+	  		my $sm;
+	  		my $id;
+	  		foreach my $tag (@records) {
+	  			my @data = split /:/, $tag;
+	  			#print join(':', @data), "\n";
+	  			if($data[0] eq "SM") { $SM = $data[1]; }
+	  			#if($data[0] eq "ID") { $id = $data[1]; }
+	  		}
+	  	}
+	}
+	close HEADER;
+	
+	return $SM;
 }
 
 ## process SAM header to extract read groups info

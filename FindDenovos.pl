@@ -663,19 +663,14 @@ sub exportSVs {
 	print STDERR "-- Exporting SVs to file\n";
 		
 	# export denovos 
-	#runCmd("export denovos", "$exportTool --db $WORK/denovos.db --bed $BEDFILE --format annovar --type all --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/denovos.${min_cov}x.all.txt");
-	#runCmd("export denovos", "$exportTool --db $WORK/denovos.db --bed $BEDFILE --format annovar --type snp --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/denovos.${min_cov}x.snp.txt");
-	#runCmd("export denovos", "$exportTool --db $WORK/denovos.db --bed $BEDFILE --format annovar --type indel --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/denovos.${min_cov}x.indel.txt");
-
-	my $command_denovo = "$exportTool ".
+	my $command_denovo = "$exportTool --denovo ".
 		"--db $WORK/denovos.db ".
 		"--bed $BEDFILE ".
 		"--ref $REF ".
-		"--format $outformat ".
-		"--type indel ". 
-		"--mincov $min_cov ". 
-		"--maxcov $max_cov ".
-		"--covratio $outratio";
+		"--output-format $outformat ".
+		"--variant-type indel ". 
+		"--min-alt-count-affected $min_cov ". 
+		"--min-vaf-affected $outratio";
 	if($intarget) { $command_denovo .= " --intarget"; }
 	if ($outformat eq "annovar") { $command_denovo .= " > $WORK/denovo.${min_cov}x.indel.annovar"; }
 	elsif ($outformat eq "vcf") { $command_denovo .= " > $WORK/denovo.${min_cov}x.indel.vcf"; }
@@ -684,19 +679,14 @@ sub exportSVs {
 	runCmd("export denovos", $command_denovo);
 	
 	# export inherited
-	#runCmd("export inherited", "$exportTool --db $WORK/inherited.db --bed $BEDFILE --format annovar --type all --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/inherited.${min_cov}x.all.txt");
-	#runCmd("export inherited", "$exportTool --db $WORK/inherited.db --bed $BEDFILE --format annovar --type snp --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/inherited.${min_cov}x.snp.txt");
-	#runCmd("export inherited", "$exportTool --db $WORK/inherited.db --bed $BEDFILE --format annovar --type indel --mincov $min_cov --maxcov $max_cov --covratio $outratio > $WORK/inherited.${min_cov}x.indel.txt");
-
-	my $command_inh = "$exportTool ".
+	my $command_inh = "$exportTool --denovo ".
 		"--db $WORK/inherited.db ".
 		"--bed $BEDFILE ".
 		"--ref $REF ".
-		"--format $outformat ".
-		"--type indel ". 
-		"--mincov $min_cov ". 
-		"--maxcov $max_cov ".
-		"--covratio $outratio";
+		"--output-format $outformat ".
+		"--variant-type indel ". 
+		"--min-alt-count-affected $min_cov ". 
+		"--min-vaf-affected $outratio";
 	if($intarget) { $command_inh .= " --intarget"; }
 	if ($outformat eq "annovar") { $command_inh .= " > $WORK/inherited.${min_cov}x.indel.annovar"; }
 	elsif ($outformat eq "vcf") { $command_inh .= " > $WORK/inherited.${min_cov}x.indel.vcf"; }

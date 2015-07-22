@@ -12,7 +12,7 @@ package Usage;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(getDefaults usageDenovo usageSingle usageSomatic usageExport);
+@EXPORT = qw(getDefaults usageDenovo usageSingle usageSomatic usageExportSingle usageExportDenovo usageExportSomatic);
 
 use strict;
 use warnings;
@@ -28,12 +28,8 @@ my %defaults = (
 	delta				=> 100,
 	map_qual			=> 1,
 	maxmismatch 		=> 3,
-	min_cov 			=> 5,
-	max_cov				=> 1000000,
-	matched_cov         => 10,
-	max_reg_cov			=> 10000,
-	minchi2				=> 0,
-	maxchi2				=> 20,
+	max_reg_cov			=> 10000,	
+
 	outratio			=> 0.05,
 	WORK 				=> "./outdir",
 	MAX_PROCESSES 		=> 1,
@@ -43,6 +39,39 @@ my %defaults = (
 	format				=> "vcf",
 	SVtype				=> "indel",
 	version_num			=> "0.4.1 (beta)",
+	
+	minInsSize			=> 1,
+	maxInsSize			=> 1000000000,
+	minDelSize			=> 1,
+	maxDelSize			=> 1000000000,
+	
+	# somatic parameters
+	minAltCntTumor		=> 4, 
+	maxAltCntNormal		=> 0,
+	minVafTumor			=> 0.05,
+	maxVafNormal		=> 0.0,
+	minCovTumor			=> 4,
+	maxCovTumor			=> 1000000000,
+	minCovNormal		=> 10,
+	maxCovNormal		=> 1000000000,
+	minPhredFisher		=> 20,
+	#maxPhredFisher		=> 1000000000,
+	
+	# denovo parameters
+	minAltCntAffected 	=> 5,
+	maxAltCntUnaffected => 0, 
+	minVafAffected 		=> 0.05,
+	maxVafUnaffected 	=> 0.0,
+	minCovAffected 		=> 5, 
+	maxCovAffected 		=> 1000000000,
+	minCovUnaffected 	=> 10,
+	maxCovUnaffected 	=> 1000000000,
+	minchi2				=> 0,
+	maxchi2				=> 20,
+	
+	# single paramters
+	min_cov 			=> 5,
+	max_cov				=> 1000000,
 );
 
 #####################################################
@@ -230,12 +259,12 @@ exit;
 #
 # Message about this program and how to use it
 #
-sub usageExport {
+sub usageExportSingle {
 	
 my $name = $_[0];
 print STDERR <<END;
 
-usage: $name --db <file> --bed <file> [OPTIONS]
+usage: $name --db <file> --bed <file> --ref <file> [OPTIONS]
 
 OPTIONS:
 
@@ -248,15 +277,119 @@ OPTIONS:
     --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
   
   Optional:
-    --format <text>    : output format for variants (annovar | vcf) [default $defaults{format}]
-    --type <text>      : mutation type (snp, del, ins, indel, all: everything) [default $defaults{SVtype}]
-    --mincov <int>     : minimum coverage for a mutation to be exported  [default $defaults{min_cov}]
-    --maxcov <int>     : maximum coverage for a mutation to be exported  [default $defaults{max_cov}]
-    --matchedcov <int> : minimum total coverage in matched samples (normal/parent) for a mutation to be exported (only for --somatic and --denovo) [default $defaults{matched_cov}]
-    --minchi2 <float>  : minimum chi-square score for a mutation to be exported [default $defaults{minchi2}]
-    --maxchi2 <float>  : maximum chi-square score for a mutation to be exported [default $defaults{maxchi2}]
-    --covratio <float> : minimum coverage ratio (AlleleCov/TotCov) for a mutation to be exported to file [default $defaults{outratio}]
-    --intarget         : export mutations only inside the target regions from the BED file
+    --output-format <text>   : output format for variants (annovar | vcf) [default $defaults{format}]
+    --variant-type <text>    : mutation type (snp, del, ins, indel, all: everything) [default $defaults{SVtype}]
+    --min-ins-size <int>     : minimum size of an insertion [default $defaults{minInsSize}]
+    --max-ins-size <int>     : maximum size of an insertion [default $defaults{maxInsSize}]
+    --min-del-size <int>     : minimum size of a deletion [default $defaults{minDelSize}]
+    --max-del-size <int>     : maximum size of a deletion [default $defaults{maxDelSize}]
+    --min-alt-count <int>    : minimum alternative count [default $defaults{min_cov}]
+    --max-alt-count <int>    : maximum alternative count [default $defaults{max_cov}]
+    --min-chi2-score <float> : minimum chi-square score [default $defaults{minchi2}]
+    --max-chi2-score <float> : maximum chi-square score [default $defaults{maxchi2}]
+    --min-vaf <float>        : minimum variant allele frequency (AlleleCov/TotCov) [default $defaults{outratio}]
+    --intarget               : export mutations only inside the target regions from the BED file
+
+  Supported output formats:
+    1. annovar
+    2. vcf
+	
+    NOTE: The database.db file can be found in the output directory for the single operation 
+    mode or in the correspective subdirectories ("main" and "twopass' for denovo and soamtic modes).
+
+END
+exit;
+}
+
+#####################################################
+#
+# Message about this program and how to use it
+#
+sub usageExportSomatic {
+	
+my $name = $_[0];
+print STDERR <<END;
+
+usage: $name --db <file> --bed <file> --ref <file> [OPTIONS]
+
+OPTIONS:
+
+    --help             : this (help) message
+    --verbose          : verbose mode
+
+  Required:
+    --db <file>        : Database of mutations
+    --bed <file>       : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
+    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
+  
+  Optional:
+    --output-format <text>       : output format for variants (annovar | vcf) [default $defaults{format}]
+    --variant-type <text>        : mutation type (snp, del, ins, indel, all: everything) [default $defaults{SVtype}]
+    --min-ins-size <int>         : minimum size of an insertion [default $defaults{minInsSize}]
+    --max-ins-size <int>         : maximum size of an insertion [default $defaults{maxInsSize}]
+    --min-del-size <int>         : minimum size of a deletion [default $defaults{minDelSize}]
+    --max-del-size <int>         : maximum size of a deletion [default $defaults{maxDelSize}]
+    --min-alt-count-tumor <int>  : minimum alternative count in the tumor [default $defaults{minAltCntTumor}]
+    --max-alt-count-normal <int> : maximum alternative count in the normal [$defaults{maxAltCntNormal}]
+    --min-vaf-tumor <float>      : minimum variant allele frequency (AlleleCov/TotCov) in the tumor [default $defaults{minVafTumor}]
+    --max-vaf-normal <float>     : maximum variant allele frequency (AlleleCov/TotCov) in the normal [default $defaults{maxVafNormal}]
+    --min-coverage-tumor <int>   : minimum coverage in the tumor [default $defaults{minCovTumor}]
+    --max-coverage-tumor <int>   : maximum coverage in the tumor [default $defaults{maxCovTumor}]
+    --min-coverage-normal <int>  : minimum coverage in the normal [default $defaults{minCovNormal}]
+    --max-coverage-normal <int>  : maximum coverage in the normal [default $defaults{maxCovNormal}]
+    --min-phred-fisher <float>   : minimum fisher exact test score [default $defaults{minPhredFisher}]
+    --intarget                   : export mutations only inside the target regions from the BED file
+
+  Supported output formats:
+    1. annovar
+    2. vcf
+	
+    NOTE: The database.db file can be found in the output directory for the single operation 
+    mode or in the correspective subdirectories ("main" and "twopass' for denovo and soamtic modes).
+
+END
+exit;
+}
+
+#####################################################
+#
+# Message about this program and how to use it
+#
+sub usageExportDenovo {
+	
+my $name = $_[0];
+print STDERR <<END;
+
+usage: $name --db <file> --bed <file> --ref <file> [OPTIONS]
+
+OPTIONS:
+
+    --help             : this (help) message
+    --verbose          : verbose mode
+
+  Required:
+    --db <file>        : Database of mutations
+    --bed <file>       : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
+    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
+  
+  Optional:
+    --output-format <text>           : output format for variants (annovar | vcf) [default $defaults{format}]
+    --variant-type <text>            : mutation type (snp, del, ins, indel, all: everything) [default $defaults{SVtype}]
+    --min-ins-size <int>             : minimum size of an insertion [default $defaults{minInsSize}]
+    --max-ins-size <int>             : maximum size of an insertion [default $defaults{maxInsSize}]
+    --min-del-size <int>             : minimum size of a deletion [default $defaults{minDelSize}]
+    --max-del-size <int>             : maximum size of a deletion [default $defaults{maxDelSize}]
+    --min-alt-count-affected <int>   : minimum alternative count in the affected sample [default $defaults{minAltCntAffected}]
+    --max-alt-count-unaffected <int> : maximum alternative count in the unaffected samples [default $defaults{maxAltCntUnaffected}]
+    --min-vaf-affected <float>       : minimum variant allele frequency (AlleleCov/TotCov) in the affected sample [default $defaults{minVafAffected}]
+    --max-vaf-unaffected <float>     : maximum variant allele frequency (AlleleCov/TotCov) in the unaffected samples [default $defaults{maxVafUnaffected}]
+    --min-coverage-affected <int>    : minimum coverage in the affected sample [default $defaults{minCovAffected}]
+    --max-coverage-affected <int>    : maximum coverage in the affected sample [default $defaults{maxCovAffected}]
+    --min-coverage-unaffected <int>  : minimum coverage in the unaffected samples [default $defaults{minCovUnaffected}]
+    --max-coverage-unaffected <int>  : maximum coverage in the unaffected samples [default $defaults{maxCovUnaffected}]
+    --min-chi2-score <float>         : minimum chi-square score [default $defaults{minchi2}]
+    --max-chi2-score <float>         : maximum chi-square score [default $defaults{maxchi2}]
+    --intarget                       : export mutations only inside the target regions from the BED file
 
   Supported output formats:
     1. annovar
