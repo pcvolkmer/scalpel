@@ -330,11 +330,11 @@ sub printHeader {
 	if($mode eq "annovar") { # annovar format
 		#print filters
 		print "##fileformat=ANNOVAR\n";
-		print "##mincov=$minCov\n"; 
-		print "##maxcov=$maxCov\n"; 
-		print "##minchi2=$minchi2\n"; 
-		print "##maxchi2=$maxchi2\n"; 
-		print "##covratio=$minCovRatio\n"; 
+		#print "##mincov=$minCov\n"; 
+		#print "##maxcov=$maxCov\n"; 
+		#print "##minchi2=$minchi2\n"; 
+		#print "##maxchi2=$maxchi2\n"; 
+		#print "##covratio=$minCovRatio\n"; 
 		print "#chr\tstart\tend\tref\tobs\tid\tsize\ttype\tavgKcov\tminKcov\tzygosity\taltKcov\tcovRatio\tchi2score\tinheritance\tbestState\tcovState\n"; 
 	} 
 	if($mode eq "vcf") { # vcf format
@@ -355,6 +355,7 @@ sub printHeader {
 		print "##INFO=<ID=BESTSTATE,Number=1,Type=String,Description=\"state of the mutation\">\n";
 		print "##INFO=<ID=COVSTATE,Number=1,Type=String,Description=\"coverage state of the mutation\">\n";
 		print "##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=\"Somatic mutation\">\n";
+		print "##INFO=<ID=DENOVO,Number=0,Type=Flag,Description=\"De novo mutation\">\n";
 		print "##FILTER=<ID=MS,Description=\"Microsatellite mutation (format: #LEN#MOTIF)\">\n";
 		print "##FILTER=<ID=lowCov,Description=\"low coverage\">\n";
 		print "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
@@ -362,11 +363,11 @@ sub printHeader {
 		print "##FORMAT=<ID=AD,Number=.,Type=Integer,Description=\"k-mer depth supporting reference/indel at the site\">\n";
 		
 		#print filters
-		print "##mincov=$minCov\n"; 
-		print "##maxcov=$maxCov\n"; 
-		print "##minchi2=$minchi2\n"; 
-		print "##maxchi2=$maxchi2\n"; 
-		print "##covratio=$minCovRatio\n";
+		#print "##mincov=$minCov\n"; 
+		#print "##maxcov=$maxCov\n"; 
+		#print "##minchi2=$minchi2\n"; 
+		#print "##maxchi2=$maxchi2\n"; 
+		#print "##covratio=$minCovRatio\n";
 
 		if($single) {
 			print "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t$sample_name\n";
@@ -450,14 +451,14 @@ sub printVariants {
 		my @A; # alternative
 		my @O; # other
 		
-		my $gt;
-		my $gt_tumor;
-		my $gt_normal;
+		my $gt = "?";
+		my $gt_tumor = "?";
+		my $gt_normal = "?";
 		
-		my $gt_mother;
-		my $gt_father;
-		my $gt_affected;
-		my $gt_sibling;
+		my $gt_mother = "?";
+		my $gt_father = "?";
+		my $gt_affected = "?";
+		my $gt_sibling = "?";
 		
 		my $zyg_normal = "?";
 		my $zyg_tumor = "?";
@@ -528,7 +529,7 @@ sub printVariants {
 		
 		# assign genotype info
 		if($denovo) {
-			
+						
 			if($R[0]>0 && $A[0]>0) { $zyg_mother = "het"; $gt_mother = "0/1"; }
 			elsif($R[0]==0 && $A[0]>0 && $O[0]==0) { $zyg_mother = "hom"; $gt_mother = "1/1"; }
 			elsif($R[0]>0 && $A[0]==0 && $O[0]==0) { $zyg_mother = "hom"; $gt_mother = "0/0"; }
@@ -590,6 +591,8 @@ sub printVariants {
 				
 		#**************** filtering ****************#
 		
+		my $filter = "";
+		
 		if($SVtype ne "all") {
 			if($SVtype eq "indel") { next if($mut->{type} eq "snp"); }
 			else { next if($mut->{type} ne $SVtype); }
@@ -622,18 +625,30 @@ sub printVariants {
 			next if($sibling_cov > $maxCovUnaffected);
 			next if($affected_cov > $maxCovAffected);
 	
-			next if($affected_vaf < $minVafAffected);
-			next if($mother_vaf > $maxVafUnaffected);		
-			next if($father_vaf > $maxVafUnaffected);		
+			if($affected_vaf < $minVafAffected) { 
+				if ($filter eq "") { $filter = $filter . "LowVafAff"; }
+				else { $filter = $filter . ",LowVafAff"; }
+			}	
+			next if($mother_vaf > $maxVafUnaffected);
+			next if($father_vaf > $maxVafUnaffected);	
 			next if($sibling_vaf > $maxVafUnaffected);
 			
-			next if($affected_alt_cnt < $minAltCntAffected);
+			if($affected_alt_cnt < $minAltCntAffected) {
+				if ($filter eq "") { $filter = $filter . "LowAltCntAff"; }
+				else { $filter = $filter . ",LowAltCntAff"; }
+			}				
 			next if($mother_alt_cnt > $maxAltCntUnaffected);
 			next if($father_alt_cnt > $maxAltCntUnaffected);
 			next if($sibling_alt_cnt > $maxAltCntUnaffected);
 			
-			next if($chi2Score > $maxchi2);
-			next if($chi2Score < $minchi2);
+			if($chi2Score > $maxchi2) { 
+				if ($filter eq "") { $filter = $filter . "highChi2score"; }
+				else { $filter = $filter . ",highChi2score"; }
+			}
+			if($chi2Score < $minchi2) { 
+				if ($filter eq "") { $filter = $filter . "lowChi2score"; }
+				else { $filter = $filter . ",lowChi2score"; }
+			}			
 		}
 		# somatic filtering
 		if($somatic) {			
@@ -641,13 +656,25 @@ sub printVariants {
 			next if($normal_cov > $maxCovNormal);
 			next if($tumor_cov < $minCovTumor);
 			next if($tumor_cov > $maxCovTumor);
-			next if($tumor_vaf < $minVafTumor);
+			if($tumor_vaf < $minVafTumor) { 
+				if ($filter eq "") { $filter = $filter . "LowVafTumor"; }
+				else { $filter = $filter . ",LowVafTumor"; }	
+			}
 			next if($normal_vaf > $maxVafNormal);
-			next if($tumor_alt_cnt < $minAltCntTumor);
+			if($tumor_alt_cnt < $minAltCntTumor) {
+				if ($filter eq "") { $filter = $filter . "LowAltCntTumor"; }
+				else { $filter = $filter . ",LowAltCntTumor"; }	
+			}
 			next if($normal_alt_cnt > $maxAltCntNormal);
-			next if($fisher_phred_score < $minPhredFisher);
+			
+			if($fisher_phred_score < $minPhredFisher) { 
+				if ($filter eq "") { $filter = $filter . "LowFisherScore"; }
+				else { $filter = $filter . ",LowFisherScore"; }	
+			}
 			#next if($fisher_phred_score > $maxPhredFisher);
-		}		
+		}
+		
+		if ($filter eq "") {$filter = "PASS"; }
 
 		#********************************************#
 		
@@ -734,21 +761,23 @@ sub printVariants {
   				my $info = "AVGCOV=$avgcov;MINCOV=$mincov;ALTCOV=$altcov;ZYG=$zyg;COVRATIO=$covRatio;CHI2=$chi2Score;FISHERPHREDSCORE:$fisher_phred_score;INH=$inher;BESTSTATE=$bestState;COVSTATE=$covState";
   				if($t eq "snp") { 
 					if($single or $denovo) {
-						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start, ".", $ref, $qry, ".", ".", $info, $format_str, $format_val); 
+						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start, ".", $ref, $qry, ".", $filter, $info, $format_str, $format_val); 
 					}
 					elsif($somatic) {
-						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start, ".", $ref, $qry, ".", ".", $info, $format_str, $format_val_tumor, $format_val_normal);
+						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start, ".", $ref, $qry, ".", $filter, $info, $format_str, $format_val_tumor, $format_val_normal);
 					}
 				}
   				else { 
 					if($single) {
-						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start-1, ".", $vcf_ref, $vcf_qry, ".", ".", $info, $format_str, $format_val); 
+						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start-1, ".", $vcf_ref, $vcf_qry, ".", $filter, $info, $format_str, $format_val); 
 					}
 					elsif($somatic) {
-						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start-1, ".", $vcf_ref, $vcf_qry, ".", ".", $info, $format_str, $format_val_tumor, $format_val_normal); 
+						if( ($bestState eq "21/01") || ($bestState eq "20/02") ) { $info = "SOMATIC;" . $info; }					
+						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start-1, ".", $vcf_ref, $vcf_qry, ".", $filter, $info, $format_str, $format_val_tumor, $format_val_normal); 
 					}
 					elsif($denovo) {
-						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start-1, ".", $vcf_ref, $vcf_qry, ".", ".", $info, $format_str, $format_val_mother, $format_val_father, $format_val_affected, $format_val_sibling); 
+						if( ($bestState eq "2212/0010") || ($bestState eq "2202/0020") ) { $info = "DENOVO;" . $info; }
+						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start-1, ".", $vcf_ref, $vcf_qry, ".", $filter, $info, $format_str, $format_val_mother, $format_val_father, $format_val_affected, $format_val_sibling); 
 					}
 				}
 			}
