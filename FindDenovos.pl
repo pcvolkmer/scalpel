@@ -98,6 +98,11 @@ my %selfSVs;
 my %denovoSVs;
 my %inheritedSVs;
 
+my $mother_name;
+my $father_name;
+my $affected_name;
+my $sibling_name;
+
 my %alnHashDad; # hash of mutations from read alignments for mom
 my %alnHashMom; # hash of mutations from read alignments for dad
 
@@ -332,6 +337,11 @@ sub callSVs {
 	
 		print STDERR "Command: $command\n" if($VERBOSE);
 		runCmd("findVariants", "$command");
+		
+		if($ID eq "dad") { $father_name = extractSM($WORK,$ID); }
+		if($ID eq "mom") { $mother_name = extractSM($WORK,$ID); }
+		if($ID eq "aff") { $affected_name = extractSM($WORK,$ID); }
+		if($ID eq "sib") { $sibling_name = extractSM($WORK,$ID); }
 	}
 }
 
@@ -349,6 +359,15 @@ sub findDenovos {
 	
 	$denovo_dbm_obj->Lock;
 	$inherited_dbm_obj->Lock;
+	
+	my $stats;
+	$stats->{mother_name} = $mother_name;
+	$stats->{father_name} = $father_name;
+	$stats->{affected_name} = $affected_name;
+	$stats->{sibling_name} = $sibling_name;
+	
+	$denovoSVs{stats} = $stats;
+	$inheritedSVs{stats} = $stats;
 	
 	my $vhash;
 	my $l2k;
@@ -686,6 +705,8 @@ sub exportSVs {
 		"--output-format $outformat ".
 		"--variant-type indel ". 
 		"--min-alt-count-affected $min_cov ". 
+		"--max-alt-count-unaffected 1000000 ".
+		"--max-vaf-unaffected 1.0 ".
 		"--min-vaf-affected $outratio";
 	if($intarget) { $command_inh .= " --intarget"; }
 	if ($outformat eq "annovar") { $command_inh .= " > $WORK/inherited.${min_cov}x.indel.annovar"; }

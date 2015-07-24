@@ -111,6 +111,10 @@ my $somatic = 0; # normal/tumor study
 my $sample_name = "sample";
 my $tumor_name = "tumor";
 my $normal_name = "normal";
+my $mother_name = "mother";
+my $father_name = "father";
+my $affected_name = "affected";
+my $sibling_name = "sibling";
 
 my $argcnt = scalar(@ARGV);
 my $start_time = time;
@@ -263,7 +267,7 @@ sub init()
 	my($filename, $dirs, $suffix) = fileparse($dbfile, @suffixes);	
 	#print "$filename\n$dirs\n$suffix\n";
 	$dbfile = $dirs . $filename;
-	print "$dbfile\n";
+	#print STDERR "$dbfile\n";
 }
 
 #####################################################
@@ -306,7 +310,12 @@ sub extractSampleNames {
 			$normal_name = $sts->{normal_name};
 		}
 		if($single) {}
-		if($denovo) {}
+		if($denovo) {
+			$mother_name = $sts->{mother_name};
+			$father_name = $sts->{father_name};
+			$affected_name = $sts->{affected_name};
+			$sibling_name = $sts->{sibling_name};
+		}
 	}
 	else {
 		print "ERROR: no sample info in DB\n";
@@ -359,11 +368,14 @@ sub printHeader {
 		print "##maxchi2=$maxchi2\n"; 
 		print "##covratio=$minCovRatio\n";
 
-		if($single or $denovo) {
+		if($single) {
 			print "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t$sample_name\n";
 		}
 		if($somatic) {
 			print "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t$tumor_name\t$normal_name\n";
+		}
+		if($denovo) {
+			print "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t$mother_name\t$father_name\t$affected_name\t$sibling_name\n";
 		}
 
 	}
@@ -442,8 +454,18 @@ sub printVariants {
 		my $gt_tumor;
 		my $gt_normal;
 		
+		my $gt_mother;
+		my $gt_father;
+		my $gt_affected;
+		my $gt_sibling;
+		
 		my $zyg_normal = "?";
 		my $zyg_tumor = "?";
+		
+		my $zyg_mother = "?";
+		my $zyg_father = "?";
+		my $zyg_affected = "?";
+		my $zyg_sibling = "?";
 		
 		if($covState ne "na") {
 			my ($REF,$ALT,$OTH) = split("/",$covState);
@@ -455,10 +477,10 @@ sub printVariants {
 			if($size == 2) { # COVSTATE=136,77/0,53/0,0
 				$normal_cov = $R[0] + $A[0] + $O[0];
 				$tumor_cov = $R[1] + $A[1] + $O[1];
-				$normal_vaf = $A[0]/$normal_cov;		
-				$tumor_vaf = $A[1]/$tumor_cov;
+				$normal_vaf = ($normal_cov == 0) ? 0 : $A[0]/$normal_cov;
+				$tumor_vaf = ($tumor_cov == 0) ? 0 : $A[1]/$tumor_cov;
 				$tumor_alt_cnt = $A[1];
-				$normal_alt_cnt = $A[0];	
+				$normal_alt_cnt = $A[0];
 			}
 			elsif ($size == 4) { # COVSTATE=26,31,21,38/0,0,16,0/0,0,0,0
 				$mother_cov   = $R[0] + $A[0] + $O[0];
@@ -471,10 +493,10 @@ sub printVariants {
 				$affected_alt_cnt = $A[2];
 				$sibling_alt_cnt = $A[3];
 				
-				$affected_vaf = $A[2]/$affected_cov;		
-				$mother_vaf = $A[0]/$mother_cov;
-				$father_vaf = $A[1]/$father_cov;
-				$sibling_vaf = $A[3]/$sibling_cov;
+				$affected_vaf = ($affected_cov == 0) ? 0 : $A[2]/$affected_cov;
+				$mother_vaf = ($mother_cov == 0) ? 0 : $A[0]/$mother_cov;
+				$father_vaf = ($father_cov == 0) ? 0 : $A[1]/$father_cov;
+				$sibling_vaf = ($sibling_cov == 0) ? 0 : $A[3]/$sibling_cov;
 			}
 		}
 		
@@ -488,7 +510,7 @@ sub printVariants {
 		#if( $prb != 1) { $loglikelihood = sprintf('%.2f', -10*log10(1.0 - $covRatio)); }
 		
 		my $chi2Score = 0;
-		if($single || $denovo) {
+		if($single || $denovo || $somatic) {
 		
 			my $o1 = $mincov; # observed 1
 			my $o2 = $altcov; # observed 2
@@ -502,6 +524,26 @@ sub printVariants {
 			if($zyg eq "hom") { $chi2Score = 0; }
 			$gt = $zyg eq "het" ? "0/1" : "1/1";
 			#print "$chi2Score\n";
+		}
+		
+		# assign genotype info
+		if($denovo) {
+			
+			if($R[0]>0 && $A[0]>0) { $zyg_mother = "het"; $gt_mother = "0/1"; }
+			elsif($R[0]==0 && $A[0]>0 && $O[0]==0) { $zyg_mother = "hom"; $gt_mother = "1/1"; }
+			elsif($R[0]>0 && $A[0]==0 && $O[0]==0) { $zyg_mother = "hom"; $gt_mother = "0/0"; }
+			
+			if($R[1]>0 && $A[1]>0) { $zyg_father = "het"; $gt_father = "0/1"; }
+			elsif($R[1]==0 && $A[1]>0 && $O[1]==0) { $zyg_father = "hom"; $gt_father = "1/1"; }
+			elsif($R[1]>0 && $A[1]==0 && $O[1]==0) { $zyg_father = "hom"; $gt_father = "0/0"; }
+			
+			if($R[2]>0 && $A[2]>0) { $zyg_affected = "het"; $gt_affected = "0/1"; }
+			elsif($R[2]==0 && $A[2]>0 && $O[2]==0) { $zyg_affected = "hom"; $gt_affected = "1/1"; }
+			elsif($R[2]>0 && $A[2]==0 && $O[2]==0) { $zyg_mother = "hom"; $gt_affected = "0/0"; }
+			
+			if($R[3]>0 && $A[3]>0) { $zyg_sibling = "het"; $gt_sibling = "0/1"; }
+			elsif($R[3]==0 && $A[3]>0 && $O[3]==0) { $zyg_sibling = "hom"; $gt_sibling = "1/1"; }
+			elsif($R[3]>0 && $A[3]==0 && $O[3]==0) { $zyg_sibling = "hom"; $gt_sibling = "0/0"; }
 		}
 		
 		#**************** Fisher exact test ****************#
@@ -657,6 +699,16 @@ sub printVariants {
 				my $format_val_normal = "";
 				my $format_val_tumor = "";
 				
+				my $mother_residual_cov = "";
+				my $father_residual_cov = "";
+				my $affected_residual_cov = "";
+				my $sibling_residual_cov = "";
+				
+				my $format_val_mother = "";
+				my $format_val_father = "";
+				my $format_val_affected = "";
+				my $format_val_sibling = "";
+				
 				if($single or $denovo) {
   					$format_val = "$gt:$altcov,$mincov:$totcov";
 				}
@@ -665,6 +717,17 @@ sub printVariants {
 					$tumor_residual_cov = $tumor_cov - $tumor_alt_cnt;
   					$format_val_normal = "$gt_normal:$normal_residual_cov,$normal_alt_cnt:$normal_cov";
   					$format_val_tumor = "$gt_tumor:$tumor_residual_cov,$tumor_alt_cnt:$tumor_cov";
+				}
+				if($denovo) {					
+					$mother_residual_cov = $mother_cov - $mother_alt_cnt;
+					$father_residual_cov = $father_cov - $father_alt_cnt;
+					$affected_residual_cov = $affected_cov - $affected_alt_cnt;
+					$sibling_residual_cov = $sibling_cov - $sibling_alt_cnt;
+					
+  					$format_val_mother = "$gt_mother:$mother_residual_cov,$mother_alt_cnt:$mother_cov";
+  					$format_val_father = "$gt_father:$father_residual_cov,$father_alt_cnt:$father_cov";
+  					$format_val_affected = "$gt_affected:$affected_residual_cov,$affected_alt_cnt:$affected_cov";
+  					$format_val_sibling = "$gt_sibling:$sibling_residual_cov,$sibling_alt_cnt:$sibling_cov";
 				}
 				
 				$covState=~s/ /,/g; # no spaces allowed by vcf spec
@@ -678,11 +741,14 @@ sub printVariants {
 					}
 				}
   				else { 
-					if($single or $denovo) {
+					if($single) {
 						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start-1, ".", $vcf_ref, $vcf_qry, ".", ".", $info, $format_str, $format_val); 
 					}
 					elsif($somatic) {
 						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start-1, ".", $vcf_ref, $vcf_qry, ".", ".", $info, $format_str, $format_val_tumor, $format_val_normal); 
+					}
+					elsif($denovo) {
+						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start-1, ".", $vcf_ref, $vcf_qry, ".", ".", $info, $format_str, $format_val_mother, $format_val_father, $format_val_affected, $format_val_sibling); 
 					}
 				}
 			}

@@ -666,6 +666,8 @@ sub exportSVs {
 		"--output-format $outformat ".
 		"--variant-type indel ". 
 		"--min-alt-count-tumor $min_cov ". 
+		"--max-alt-count-normal 1000000 ".
+		"--max-vaf-normal 1.0 ".
 		"--min-vaf-tumor $outratio";
 	if($intarget) { $command_comm .= " --intarget"; }
 	if ($outformat eq "annovar") { $command_comm .= " > $WORK/common.${min_cov}x.indel.annovar"; }
