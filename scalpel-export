@@ -357,7 +357,22 @@ sub printHeader {
 		print "##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=\"Somatic mutation\">\n";
 		print "##INFO=<ID=DENOVO,Number=0,Type=Flag,Description=\"De novo mutation\">\n";
 		print "##FILTER=<ID=MS,Description=\"Microsatellite mutation (format: #LEN#MOTIF)\">\n";
-		print "##FILTER=<ID=lowCov,Description=\"low coverage\">\n";
+		
+		# single
+		print "##FILTER=<ID=LowVaf,Description=\"low variant allele frequency (<$minCovRatio)\">\n";
+		print "##FILTER=<ID=LowAltCnt,Description=\"low alternative allele count (<$minCov)\">\n";
+		
+		#denovo
+		print "##FILTER=<ID=LowVafAff,Description=\"low variant allele frequency for affected sample (<$minVafAffected)\">\n";
+		print "##FILTER=<ID=LowAltCntAff,Description=\"low alternative allele count for affected sample (<$minAltCntAffected)\">\n";
+		print "##FILTER=<ID=LowChi2score,Description=\"low chi-squared score (<$minchi2)\">\n";
+		print "##FILTER=<ID=HigChi2score,Description=\"high chi-squared score (>$maxchi2)\">\n";
+	
+		#somatic
+		print "##FILTER=<ID=LowVafTumor,Description=\"low variant allele frequency for tumor (<$minVafTumor)\">\n";
+		print "##FILTER=<ID=LowAltCntTumor,Description=\"low alternative allele count for tumor (<$minAltCntTumor)\">\n";
+		print "##FILTER=<ID=LowFisherScore,Description=\"low fisher exact test score for tumor-normal (<$minPhredFisher)\">\n";
+		
 		print "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
 		print "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"k-mer Depth\">\n";
 		print "##FORMAT=<ID=AD,Number=.,Type=Integer,Description=\"k-mer depth supporting reference/indel at the site\">\n";
@@ -607,11 +622,24 @@ sub printVariants {
 			next if($mut->{len} > $maxDelSize); 
 		}		
 		if($single)  {
-			next if($mut->{mincov} < $minCov);
+			if($mut->{mincov} < $minCov) {
+				if ($filter eq "") { $filter = $filter . "LowAltCnt"; }
+				else { $filter = $filter . ",LowAltCnt"; }
+			}
 			next if($mut->{mincov} > $maxCov);
-			next if($covRatio <= $minCovRatio); # skip sequencing errors
-			next if($chi2Score > $maxchi2);
-			next if($chi2Score < $minchi2);
+			
+			if($covRatio < $minCovRatio) { # skip sequencing errors
+				if ($filter eq "") { $filter = $filter . "LowVaf"; }
+				else { $filter = $filter . ",LowVaf"; }
+			}
+			if($chi2Score > $maxchi2) { 
+				if ($filter eq "") { $filter = $filter . "HighChi2score"; }
+				else { $filter = $filter . ",HighChi2score"; }
+			}
+			if($chi2Score < $minchi2) { 
+				if ($filter eq "") { $filter = $filter . "LowChi2score"; }
+				else { $filter = $filter . ",LowChi2score"; }
+			}
 		}
 		# denovo filtering
 		if($denovo) {
@@ -642,12 +670,12 @@ sub printVariants {
 			next if($sibling_alt_cnt > $maxAltCntUnaffected);
 			
 			if($chi2Score > $maxchi2) { 
-				if ($filter eq "") { $filter = $filter . "highChi2score"; }
-				else { $filter = $filter . ",highChi2score"; }
+				if ($filter eq "") { $filter = $filter . "HighChi2score"; }
+				else { $filter = $filter . ",HighChi2score"; }
 			}
 			if($chi2Score < $minchi2) { 
-				if ($filter eq "") { $filter = $filter . "lowChi2score"; }
-				else { $filter = $filter . ",lowChi2score"; }
+				if ($filter eq "") { $filter = $filter . "LowChi2score"; }
+				else { $filter = $filter . ",LowChi2score"; }
 			}			
 		}
 		# somatic filtering
