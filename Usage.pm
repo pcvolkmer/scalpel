@@ -92,7 +92,7 @@ print STDERR <<END;
 
 usage: $name --bam <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
 	
-Detect INDELs in one single dataset (e.g., one individual).
+Detect indels in one single dataset (e.g., one individual).
 	
 OPTIONS:
 
@@ -125,13 +125,11 @@ OPTIONS:
     --format           : export mutations in selected format (annovar | vcf) [default $defaults{format}]
     --intarget         : export mutations only inside the target regions from the BED file
     --logs             : keep log files
-    --mincov <int>     : minimum coverage for exporting mutation to file [default $defaults{min_cov}]
-    --outratio <float> : minimum coverage ratio for exporting mutation to file (default: $defaults{outratio})
 
-  Note 1: the list of detected INDELs is saved in file: OUTDIR/variants.*.indel.*
+  Note 1: the list of detected indels is saved in file: OUTDIR/variants.*.indel.*
   where OUTDIR is the output directory selected with option "--dir" [default $defaults{WORK}]
 
-  Note 2: use the export tool (option "--export") to export mutations using different filtering criteria
+  Note 2: use the export tool (scalpel-export) to export mutations using different filtering criteria
 
 END
 exit;
@@ -148,7 +146,7 @@ print STDERR <<END;
 
 usage: $name --dad <BAM file> --mom <BAM file> --aff <BAM file> --sib <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
 
-Detect de novo INDELs in a family of four individuals (mom, dad, aff, sib).
+Detect de novo indels in a family of four individuals (mom, dad, aff, sib).
 
 OPTIONS:
 
@@ -178,20 +176,17 @@ OPTIONS:
     --dir <directory>  : output directory [default $defaults{WORK}]
     --numprocs <int>   : number of parallel jobs (1 for no parallelization) [default $defaults{MAX_PROCESSES}]
     --coords <file>    : file with list of selected coordinates to examine [default $defaults{selected}]
+    --two-pass         : perform second pass of analysis to confirm candidate calls
 
   Output:
     --format           : export mutations in selected format (annovar | vcf) [default $defaults{format}]
     --intarget         : export mutations only inside the target regions from the BED file
     --logs             : keep log files
-    --mincov <int>     : minimum coverage for exporting mutation to file [default $defaults{min_cov}]
-    --outratio <float> : minimum coverage ratio for exporting mutation to file (default: $defaults{outratio})
-    --two-pass         : perform second pass of analysis to confirm candidate calls
-	
 
-  Note 1: the list of de novo INDELs is saved in file: OUTDIR/denovos.*.indel.*
+  Note 1: the list of de novo indels is saved in file: OUTDIR/denovos.*.indel.*
   where OUTDIR is the output directory selected with option "--dir" [default $defaults{WORK}]
 
-  Note 2: use the export tool (option "--export") to export mutations using different filtering criteria
+  Note 2: use the export tool (scalpel-export) to export mutations using different filtering criteria
 
 END
 exit;
@@ -208,7 +203,7 @@ print STDERR <<END;
 
 usage: $name --normal <BAM file> --tumor <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
 
-Detect somatic INDELs in a tumor/normal pair
+Detect somatic indels in a tumor/normal pair
 
 OPTIONS:
 
@@ -236,19 +231,17 @@ OPTIONS:
     --dir <directory>     : output directory [default $defaults{WORK}]
     --numprocs <int>      : number of parallel jobs (1 for no parallelization) [default $defaults{MAX_PROCESSES}]
     --coords <file>       : file with list of selected coordinates to examine [default $defaults{selected}]
+    --two-pass            : perform second pass of analysis to confirm candidate calls
 
   Output:
     --format              : export mutations in selected format (annovar | vcf) [default $defaults{format}]
     --intarget            : export mutations only inside the target regions from the BED file
     --logs                : keep log files
-    --mincov <int>        : minimum coverage for exporting mutation to file [default $defaults{min_cov}]
-    --outratio <float>    : minimum coverage ratio for exporting mutation to file (default: $defaults{outratio})
-    --two-pass            : perform second pass of analysis to confirm candidate calls
 	
-  Note 1: the list of somatic INDELs is saved in file: OUTDIR/somatic.*.indel.* 
+  Note 1: the list of somatic indels is saved in file: OUTDIR/somatic.*.indel.* 
   where OUTDIR is the output directory selected with option "--dir" [default $defaults{WORK}].
   
-  Note 2: use the export tool (option "--export") to export mutations using different filtering criteria
+  Note 2: use the export tool (scalpel-export) to export mutations using different filtering criteria
 
 END
 exit;

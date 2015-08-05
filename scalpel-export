@@ -359,33 +359,38 @@ sub printHeader {
 		print "##FILTER=<ID=MS,Description=\"Microsatellite mutation (format: #LEN#MOTIF)\">\n";
 		
 		# single
-		print "##FILTER=<ID=LowVaf,Description=\"low variant allele frequency (<$minCovRatio)\">\n";
-		print "##FILTER=<ID=LowAltCnt,Description=\"low alternative allele count (<$minCov)\">\n";
-		print "##FILTER=<ID=HighAltCnt,Description=\"high alternative allele count (>$maxCov)\">\n";
-		
+		if($single) {
+			print "##FILTER=<ID=LowVaf,Description=\"low variant allele frequency (<$minCovRatio)\">\n";
+			print "##FILTER=<ID=LowAltCnt,Description=\"low alternative allele count (<$minCov)\">\n";
+			print "##FILTER=<ID=HighAltCnt,Description=\"high alternative allele count (>$maxCov)\">\n";
+			print "##FILTER=<ID=LowChi2score,Description=\"low chi-squared score (<$minchi2)\">\n";
+			print "##FILTER=<ID=HigChi2score,Description=\"high chi-squared score (>$maxchi2)\">\n";
+		}
 		#denovo
-		print "##FILTER=<ID=LowCovAff,Description=\"low coverage in affected sample (<$minCovAffected)\">\n";		
-		print "##FILTER=<ID=LowCovUnaff,Description=\"low coverage in unaffected samples (<$minCovUnaffected)\">\n";
-		print "##FILTER=<ID=HighCovAff,Description=\"high coverage in affected sample (>$maxCovAffected)\">\n";
-		print "##FILTER=<ID=HighCovUnaff,Description=\"high coverage in unaffected samples (>$maxCovUnaffected)\">\n";
-		print "##FILTER=<ID=LowVafAff,Description=\"low variant allele frequency for affected sample (<$minVafAffected)\">\n";
-		print "##FILTER=<ID=HighVafUnaff,Description=\"high variant allele frequency for unaffected sample (>$maxVafUnaffected)\">\n";
-		print "##FILTER=<ID=LowAltCntAff,Description=\"low alternative allele count for affected sample (<$minAltCntAffected)\">\n";
-		print "##FILTER=<ID=HighAltCntUnaff,Description=\"high alternative allele count for unaffected sample (>$maxAltCntUnaffected)\">\n";
-		print "##FILTER=<ID=LowChi2score,Description=\"low chi-squared score (<$minchi2)\">\n";
-		print "##FILTER=<ID=HigChi2score,Description=\"high chi-squared score (>$maxchi2)\">\n";
-	
+		if($denovo) {
+			print "##FILTER=<ID=LowCovAff,Description=\"low coverage in affected sample (<$minCovAffected)\">\n";		
+			print "##FILTER=<ID=LowCovUnaff,Description=\"low coverage in unaffected samples (<$minCovUnaffected)\">\n";
+			print "##FILTER=<ID=HighCovAff,Description=\"high coverage in affected sample (>$maxCovAffected)\">\n";
+			print "##FILTER=<ID=HighCovUnaff,Description=\"high coverage in unaffected samples (>$maxCovUnaffected)\">\n";
+			print "##FILTER=<ID=LowVafAff,Description=\"low variant allele frequency for affected sample (<$minVafAffected)\">\n";
+			print "##FILTER=<ID=HighVafUnaff,Description=\"high variant allele frequency for unaffected sample (>$maxVafUnaffected)\">\n";
+			print "##FILTER=<ID=LowAltCntAff,Description=\"low alternative allele count for affected sample (<$minAltCntAffected)\">\n";
+			print "##FILTER=<ID=HighAltCntUnaff,Description=\"high alternative allele count for unaffected sample (>$maxAltCntUnaffected)\">\n";
+			print "##FILTER=<ID=LowChi2score,Description=\"low chi-squared score (<$minchi2)\">\n";
+			print "##FILTER=<ID=HigChi2score,Description=\"high chi-squared score (>$maxchi2)\">\n";
+		}		
 		#somatic
-		print "##FILTER=<ID=LowCovNormal,Description=\"low coverage in the normal (<$minCovNormal)\">\n";
-		print "##FILTER=<ID=HighCovNormal,Description=\"high coverage in the normal (>$maxCovNormal)\">\n";
-		print "##FILTER=<ID=LowCovTumor,Description=\"low coverage in the tumor (<$minCovTumor)\">\n";
-		print "##FILTER=<ID=HighCovTumor,Description=\"high coverage in the tumor (>$maxCovTumor)\">\n";
-		print "##FILTER=<ID=LowVafTumor,Description=\"low variant allele frequency for tumor (<$minVafTumor)\">\n";
-		print "##FILTER=<ID=HighVafNormal,Description=\"high variant allele frequency for normal (>$maxVafNormal)\">\n";
-		print "##FILTER=<ID=LowAltCntTumor,Description=\"low alternative allele count for tumor (<$minAltCntTumor)\">\n";
-		print "##FILTER=<ID=HighAltCntNormal,Description=\"high alternative allele count for normal (>$maxAltCntNormal)\">\n";
-		print "##FILTER=<ID=LowFisherScore,Description=\"low fisher exact test score for tumor-normal (<$minPhredFisher)\">\n";
-		
+		if($somatic) {
+			print "##FILTER=<ID=LowCovNormal,Description=\"low coverage in the normal (<$minCovNormal)\">\n";
+			print "##FILTER=<ID=HighCovNormal,Description=\"high coverage in the normal (>$maxCovNormal)\">\n";
+			print "##FILTER=<ID=LowCovTumor,Description=\"low coverage in the tumor (<$minCovTumor)\">\n";
+			print "##FILTER=<ID=HighCovTumor,Description=\"high coverage in the tumor (>$maxCovTumor)\">\n";
+			print "##FILTER=<ID=LowVafTumor,Description=\"low variant allele frequency for tumor (<$minVafTumor)\">\n";
+			print "##FILTER=<ID=HighVafNormal,Description=\"high variant allele frequency for normal (>$maxVafNormal)\">\n";
+			print "##FILTER=<ID=LowAltCntTumor,Description=\"low alternative allele count for tumor (<$minAltCntTumor)\">\n";
+			print "##FILTER=<ID=HighAltCntNormal,Description=\"high alternative allele count for normal (>$maxAltCntNormal)\">\n";
+			print "##FILTER=<ID=LowFisherScore,Description=\"low fisher exact test score for tumor-normal (<$minPhredFisher)\">\n";
+		}
 		print "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
 		print "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"k-mer Depth\">\n";
 		print "##FORMAT=<ID=AD,Number=.,Type=Integer,Description=\"k-mer depth supporting reference/indel at the site\">\n";

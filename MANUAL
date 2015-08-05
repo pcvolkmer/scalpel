@@ -6,21 +6,26 @@
 * SYNOPSIS
 * DESCRIPTION
 * COMMANDS AND OPTIONS
-* ANNOVAR OUTPUT FORMAT
 * VCF OUTPUT FORMAT
+* ANNOVAR OUTPUT FORMAT
 * AUTHORS
 * LICENSE
 * CITATION
 
 ###### SYNOPSIS ######
 
-	scalpel --single --bam <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
+	scalpel-discovery --single --bam <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
 
-	scalpel --denovo --dad <BAM file> --mom <BAM file> --aff <BAM file> --sib <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
+	scalpel-discovery --denovo --dad <BAM file> --mom <BAM file> --aff <BAM file> --sib <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
 
-	scalpel --somatic --normal <BAM file> --tumor <BAM file> --bed <BEX file> --ref <FASTA file> [OPTIONS]
+	scalpel-discovery --somatic --normal <BAM file> --tumor <BAM file> --bed <BEX file> --ref <FASTA file> [OPTIONS]
 	
-	scalpel --export --db <DB file> --bed <BED file> --ref <FASTA file> [OPTIONS]
+	scalpel-export --single --db <DB file> --bed <BED file> --ref <FASTA file> [OPTIONS]
+	
+	scalpel-export --denovo --db <DB file> --bed <BED file> --ref <FASTA file> [OPTIONS]
+	
+	scalpel-export --somatic --db <DB file> --bed <BED file> --ref <FASTA file> [OPTIONS]
+	
 
 ###### DESCRIPTION ######
 
@@ -33,201 +38,374 @@ In somatic mode scalpel detects somatic INDELs in a tumor/sample pair given in i
 For all the modes of operation, scalpel requires that the raw reads have been previously aligned with 
 BWA using default parameters. See BWA description (at <http://bio-bwa.sourceforge.net/bwa.shtml>) for more info.
 
+
 ###### COMMANDS AND OPTIONS ######
 
-###### single ######
+###### single -- variant calling on single sample ######
 
-variant calling on single sample.
+usage: scalpel --single --bam <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
 
-	usage: scalpel --single --bam <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
+Detect indels in one single dataset (e.g., one individual).
 
-	OPTIONS:
+OPTIONS:
 
-	    --help             : this (help) message
-	    --verbose          : verbose mode
+    --help             : this (help) message
+    --verbose          : verbose mode
 
-	  Required:
-	    --bam <BAM file>   : BAM file with the reference-aligned reads
-	    --bed <BED file>   : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
-	    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
+  Required:
+    --bam <BAM file>   : BAM file with the reference-aligned reads
+    --bed <BED file>   : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
+    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
-	  Optional:
-	    --kmer <int>       : k-mer size [default 25]
-	    --covthr <int>     : threshold used to select source and sink [default 5]
-	    --lowcov <int>     : threshold used to remove low-coverage nodes [default 2]
-	    --covratio <float> : minimum coverage ratio for sequencing errors (default: 0.01)
-	    --radius <int>     : left and right extension (in base-pairs) [default 100]
-	    --window <int>     : window-size of the region to assemble (in base-pairs) [default 400]
-	    --maxregcov <int>  : maximum average coverage allowed per region [default 10000]
-	    --step <int>       : delta shift for the sliding window (in base-pairs) [default 100]
-	    --mapscore <int>   : minimum mapping quality for selecting reads to assemble [default 1]
-	    --pathlimit <int>  : limit number of sequence paths to [default 1000000]
-	    --mismatches <int> : max number of mismatches in near-perfect repeat detection [default 3]
-	    --dir <directory>  : output directory [default ./outdir]
-	    --numprocs <int>   : number of parallel jobs (1 for no parallelization) [default 1]
-	    --sample <string>  : only process reads/fragments in sample [default ALL]
-	    --coords <file>    : file with list of selected locations to examine [default null]
+  Optional:
+    --kmer <int>       : k-mer size [default 25]
+    --covthr <int>     : threshold used to select source and sink [default 5]
+    --lowcov <int>     : threshold used to remove low-coverage nodes [default 2]
+    --covratio <float> : minimum coverage ratio for sequencing errors (default: 0.01)
+    --radius <int>     : left and right extension (in base-pairs) [default 100]
+    --window <int>     : window-size of the region to assemble (in base-pairs) [default 400]
+    --maxregcov <int>  : maximum average coverage allowed per region [default 10000]
+    --step <int>       : delta shift for the sliding window (in base-pairs) [default 100]
+    --mapscore <int>   : minimum mapping quality for selecting reads to assemble [default 1]
+    --pathlimit <int>  : limit number of sequence paths to [default 1000000]
+    --mismatches <int> : max number of mismatches in near-perfect repeat detection [default 3]
+    --dir <directory>  : output directory [default ./outdir]
+    --numprocs <int>   : number of parallel jobs (1 for no parallelization) [default 1]
+    --sample <string>  : only process reads/fragments in sample [default ALL]
+    --coords <file>    : file with list of selected locations to examine [default null]
 
-	  Output:
-	    --format           : export mutations in selected format (annovar | vcf) [default vcf]
-	    --intarget         : export mutations only inside the target regions from the BED file
-	    --logs             : keep log files
-	    --mincov <int>     : minimum coverage for exporting mutation to file [default 5]
-	    --outratio <float> : minimum coverage ratio for exporting mutation to file (default: 0.05)
+  Output:
+    --format           : export mutations in selected format (annovar | vcf) [default vcf]
+    --intarget         : export mutations only inside the target regions from the BED file
+    --logs             : keep log files
 
-	  Note 1: the list of detected INDELs is saved in file: OUTDIR/variants.*.indel.*
-	  where OUTDIR is the output directory selected with option "--dir" [default ./outdir]
+  Note 1: the list of detected indels is saved in file: OUTDIR/variants.*.indel.*
+  where OUTDIR is the output directory selected with option "--dir" [default ./outdir]
 
-	  Note 2: use the export tool (option "--export") to export mutations using different filtering criteria
+  Note 2: use the export tool (scalpel-export) to export mutations using different filtering criteria
+  
 
-###### denovo ######
+###### denovo -- call de novo variants in one family of four individuals (mom, dad, aff, sib) ######
 
-call de novo variants in one family of four individuals (mom, dad, aff, sib).
+usage: scalpel --denovo --dad <BAM file> --mom <BAM file> --aff <BAM file> --sib <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
 
-	usage: scalpel --denovo --dad <BAM file> --mom <BAM file> --aff <BAM file> --sib <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
+Detect de novo indels in a family of four individuals (mom, dad, aff, sib).
 
-	OPTIONS:
+OPTIONS:
 
-	    --help             : this (help) message
-	    --verbose          : verbose mode
+    --help             : this (help) message
+    --verbose          : verbose mode
 
-	  Required:
-	    --dad <BAM file>   : father BAM file
-	    --mom <BAM file>   : mother BAM file
-	    --aff <BAM file>   : affected child BAM file
-	    --sib <BAM file>   : sibling BAM file
-	    --bed <BED file>   : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
-	    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
+  Required:
+    --dad <BAM file>   : father BAM file
+    --mom <BAM file>   : mother BAM file
+    --aff <BAM file>   : affected child BAM file
+    --sib <BAM file>   : sibling BAM file
+    --bed <BED file>   : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
+    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
-	  Optional:
-	    --kmer <int>       : k-mer size [default 25]
-	    --covthr <int>     : threshold used to select source and sink [default 5]
-	    --lowcov <int>     : threshold used to remove low-coverage nodes [default 2]
-	    --covratio <float> : minimum coverage ratio for sequencing errors (default: 0.01)
-	    --radius <int>     : left and right extension (in base-pairs) [default 100]
-	    --window <int>     : window-size of the region to assemble (in base-pairs) [default 400]
-	    --maxregcov <int>  : maximum average coverage allowed per region [default 10000]
-	    --step <int>       : delta shift for the sliding window (in base-pairs) [default 100]
-	    --mapscore <int>   : minimum mapping quality for selecting reads to assemble [default 1]
-	    --pathlimit <int>  : limit number of sequence paths to [default 1000000]
-	    --mismatches <int> : max number of mismatches in near-perfect repeat detection [default 3]
-	    --dir <directory>  : output directory [default ./outdir]
-	    --numprocs <int>   : number of parallel jobs (1 for no parallelization) [default 1]
-	    --coords <file>    : file with list of selected coordinates to examine [default null]
+  Optional:
+    --kmer <int>       : k-mer size [default 25]
+    --covthr <int>     : threshold used to select source and sink [default 5]
+    --lowcov <int>     : threshold used to remove low-coverage nodes [default 2]
+    --covratio <float> : minimum coverage ratio for sequencing errors (default: 0.01)
+    --radius <int>     : left and right extension (in base-pairs) [default 100]
+    --window <int>     : window-size of the region to assemble (in base-pairs) [default 400]
+    --maxregcov <int>  : maximum average coverage allowed per region [default 10000]
+    --step <int>       : delta shift for the sliding window (in base-pairs) [default 100]
+    --mapscore <int>   : minimum mapping quality for selecting reads to assemble [default 1]
+    --pathlimit <int>  : limit number of sequence paths to [default 1000000]
+    --mismatches <int> : max number of mismatches in near-perfect repeat detection [default 3]
+    --dir <directory>  : output directory [default ./outdir]
+    --numprocs <int>   : number of parallel jobs (1 for no parallelization) [default 1]
+    --coords <file>    : file with list of selected coordinates to examine [default null]
+    --two-pass         : perform second pass of analysis to confirm candidate calls
 
-	  Output:
-	    --format           : export mutations in selected format (annovar | vcf) [default vcf]
-	    --intarget         : export mutations only inside the target regions from the BED file
-	    --logs             : keep log files
-	    --mincov <int>     : minimum coverage for exporting mutation to file [default 5]
-	    --outratio <float> : minimum coverage ratio for exporting mutation to file (default: 0.05)
-	    --two-pass         : perform second pass of analysis to confirm candidate calls
+  Output:
+    --format           : export mutations in selected format (annovar | vcf) [default vcf]
+    --intarget         : export mutations only inside the target regions from the BED file
+    --logs             : keep log files
 
+  Note 1: the list of de novo indels is saved in file: OUTDIR/denovos.*.indel.*
+  where OUTDIR is the output directory selected with option "--dir" [default ./outdir]
 
-	  Note 1: the list of de novo INDELs is saved in file: OUTDIR/denovos.*.indel.*
-	  where OUTDIR is the output directory selected with option "--dir" [default ./outdir]
+  Note 2: use the export tool (scalpel-export) to export mutations using different filtering criteria
+  
 
-	  Note 2: use the export tool (option "--export") to export mutations using different filtering criteria
-
-###### somatic ######
-
-detects somatic indels in a tumor/normal pair.
+###### somatic - detects somatic indels in a tumor/normal pair ######
 	
-	usage: scalpel --somatic --normal <BAM file> --tumor <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
+usage: scalpel --somatic --normal <BAM file> --tumor <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
 
-	OPTIONS:
+Detect somatic indels in a tumor/normal pair
 
-	    --help                : this (help) message
-	    --verbose             : verbose mode
+OPTIONS:
 
-	  Required:
-	    --normal <BAM file>   : normal BAM file
-	    --tumor  <BAM file>   : tumor BAM file
-	    --bed    <BED file>   : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
-	    --ref    <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
+    --help                : this (help) message
+    --verbose             : verbose mode
 
-	  Optional:
-	    --kmer <int>          : k-mer size [default 25]
-	    --covthr <int>        : threshold used to select source and sink [default 5]
-	    --lowcov <int>        : threshold used to remove low-coverage nodes [default 2]
-	    --covratio <float>    : minimum coverage ratio for sequencing errors (default: 0.01)
-	    --radius <int>        : left and right extension (in base-pairs) [default 100]
-	    --window <int>        : window-size of the region to assemble (in base-pairs) [default 400]
-	    --maxregcov <int>     : maximum average coverage allowed per region [default 10000]
-	    --step <int>          : delta shift for the sliding window (in base-pairs) [default 100]
-	    --mapscore <int>      : minimum mapping quality for selecting reads to assemble [default 1]
-	    --pathlimit <int>     : limit number of sequence paths to [default 1000000]
-	    --mismatches <int>    : max number of mismatches in near-perfect repeat detection [default 3]
-	    --dir <directory>     : output directory [default ./outdir]
-	    --numprocs <int>      : number of parallel jobs (1 for no parallelization) [default 1]
-	    --coords <file>       : file with list of selected coordinates to examine [default null]
+  Required:
+    --normal <BAM file>   : normal BAM file
+    --tumor  <BAM file>   : tumor BAM file
+    --bed    <BED file>   : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
+    --ref    <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
-	  Output:
-	    --format              : export mutations in selected format (annovar | vcf) [default vcf]
-	    --intarget            : export mutations only inside the target regions from the BED file
-	    --logs                : keep log files
-	    --mincov <int>        : minimum coverage for exporting mutation to file [default 5]
-	    --outratio <float>    : minimum coverage ratio for exporting mutation to file (default: 0.05)
-	    --two-pass            : perform second pass of analysis to confirm candidate calls
+  Optional:
+    --kmer <int>          : k-mer size [default 25]
+    --covthr <int>        : threshold used to select source and sink [default 5]
+    --lowcov <int>        : threshold used to remove low-coverage nodes [default 2]
+    --covratio <float>    : minimum coverage ratio for sequencing errors (default: 0.01)
+    --radius <int>        : left and right extension (in base-pairs) [default 100]
+    --window <int>        : window-size of the region to assemble (in base-pairs) [default 400]
+    --maxregcov <int>     : maximum average coverage allowed per region [default 10000]
+    --step <int>          : delta shift for the sliding window (in base-pairs) [default 100]
+    --mapscore <int>      : minimum mapping quality for selecting reads to assemble [default 1]
+    --pathlimit <int>     : limit number of sequence paths to [default 1000000]
+    --mismatches <int>    : max number of mismatches in near-perfect repeat detection [default 3]
+    --dir <directory>     : output directory [default ./outdir]
+    --numprocs <int>      : number of parallel jobs (1 for no parallelization) [default 1]
+    --coords <file>       : file with list of selected coordinates to examine [default null]
+    --two-pass            : perform second pass of analysis to confirm candidate calls
 
-	  Note 1: the list of somatic INDELs is saved in file: OUTDIR/somatic.*.indel.*
-	  where OUTDIR is the output directory selected with option "--dir" [default ./outdir].
+  Output:
+    --format              : export mutations in selected format (annovar | vcf) [default vcf]
+    --intarget            : export mutations only inside the target regions from the BED file
+    --logs                : keep log files
 
-	  Note 2: use the export tool (option "--export") to export mutations using different filtering criteria
+  Note 1: the list of somatic indels is saved in file: OUTDIR/somatic.*.indel.*
+  where OUTDIR is the output directory selected with option "--dir" [default ./outdir].
 
-###### export tool ######
+  Note 2: use the export tool (scalpel-export) to export mutations using different filtering criteria
 
-Export mutations from database
+###### EXPORT TOOL ######
+
+Export mutations from database in single, somatic or denovo mode
+
+###### export single mode ######
 	
-	usage: scalpel --export --db <file> --bed <file> [OPTIONS]
+usage: scalpel-export --single --db <file> --bed <file> --ref <file> [OPTIONS]
 
-	OPTIONS:
+OPTIONS:
 
-	    --help             : this (help) message
-	    --verbose          : verbose mode
+    --help             : this (help) message
+    --verbose          : verbose mode
+
+  Required:
+    --db <file>        : Database of mutations
+    --bed <file>       : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
+    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
+
+  Optional:
+    --output-format <text>   : output format for variants (annovar | vcf) [default vcf]
+    --variant-type <text>    : mutation type (snp, del, ins, indel, all: everything) [default indel]
+    --min-ins-size <int>     : minimum size of an insertion [default 1]
+    --max-ins-size <int>     : maximum size of an insertion [default 1000000000]
+    --min-del-size <int>     : minimum size of a deletion [default 1]
+    --max-del-size <int>     : maximum size of a deletion [default 1000000000]
+    --min-alt-count <int>    : minimum alternative count [default 5]
+    --max-alt-count <int>    : maximum alternative count [default 1000000]
+    --min-chi2-score <float> : minimum chi-square score [default 0]
+    --max-chi2-score <float> : maximum chi-square score [default 20]
+    --min-vaf <float>        : minimum variant allele frequency (AlleleCov/TotCov) [default 0.05]
+    --intarget               : export mutations only inside the target regions from the BED file
+
+  Supported output formats:
+    1. annovar
+    2. vcf
+
+    NOTE: The database.db file can be found in the output directory for the single operation
+    mode or in the correspective subdirectories ("main" and "twopass' for denovo and soamtic modes).
 	
-	  Required:
-	    --db <file>        : Database of mutations
-	    --bed <file>       : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
-	    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
-	  Optional:
-	    --format <text>    : output format for variants (annovar | vcf) [default vcf]
-	    --type <text>      : mutation type (snp, del, ins, indel, all: everything) [default indel]
-	    --mincov <int>     : minimum coverage for a mutation to be exported  [default 5]
-	    --maxcov <int>     : maximum coverage for a mutation to be exported  [default 1000000]
-	    --matchedcov <int> : minimum total coverage in matched samples (normal/parent) for a mutation to be exported (only for --somatic and --denovo) [default 10]
-	    --minchi2 <float>  : minimum chi-square score for a mutation to be exported [default 0]
-	    --maxchi2 <float>  : maximum chi-square score for a mutation to be exported [default 20]
-	    --covratio <float> : minimum coverage ratio (AlleleCov/TotCov) for a mutation to be exported to file [default 0.05]
-	    --intarget         : export mutations only inside the target regions from the BED file
+###### export denovo mode ######
 
-	  Supported output formats:
-	    1. annovar
-	    2. vcf
+usage: scalpel-export --denovo --db <file> --bed <file> --ref <file> [OPTIONS]
 
-	    NOTE: The database.db file can be found in the output directory for the single operation
-	    mode or in the correspective subdirectories ("main" and "twopass' for denovo and soamtic modes).
+OPTIONS:
+
+    --help             : this (help) message
+    --verbose          : verbose mode
+
+  Required:
+    --db <file>        : Database of mutations
+    --bed <file>       : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
+    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
+
+  Optional:
+    --output-format <text>           : output format for variants (annovar | vcf) [default vcf]
+    --variant-type <text>            : mutation type (snp, del, ins, indel, all: everything) [default indel]
+    --min-ins-size <int>             : minimum size of an insertion [default 1]
+    --max-ins-size <int>             : maximum size of an insertion [default 1000000000]
+    --min-del-size <int>             : minimum size of a deletion [default 1]
+    --max-del-size <int>             : maximum size of a deletion [default 1000000000]
+    --min-alt-count-affected <int>   : minimum alternative count in the affected sample [default 5]
+    --max-alt-count-unaffected <int> : maximum alternative count in the unaffected samples [default 0]
+    --min-vaf-affected <float>       : minimum variant allele frequency (AlleleCov/TotCov) in the affected sample [default 0.05]
+    --max-vaf-unaffected <float>     : maximum variant allele frequency (AlleleCov/TotCov) in the unaffected samples [default 0]
+    --min-coverage-affected <int>    : minimum coverage in the affected sample [default 5]
+    --max-coverage-affected <int>    : maximum coverage in the affected sample [default 1000000000]
+    --min-coverage-unaffected <int>  : minimum coverage in the unaffected samples [default 10]
+    --max-coverage-unaffected <int>  : maximum coverage in the unaffected samples [default 1000000000]
+    --min-chi2-score <float>         : minimum chi-square score [default 0]
+    --max-chi2-score <float>         : maximum chi-square score [default 20]
+    --intarget                       : export mutations only inside the target regions from the BED file
+
+  Supported output formats:
+    1. annovar
+    2. vcf
+
+    NOTE: The database.db file can be found in the output directory for the single operation
+    mode or in the correspective subdirectories ("main" and "twopass' for denovo and soamtic modes).
+
+	
+###### export somatic mode ######
+
+usage: scalpel-export --somatic --db <file> --bed <file> --ref <file> [OPTIONS]
+
+OPTIONS:
+
+    --help             : this (help) message
+    --verbose          : verbose mode
+
+  Required:
+    --db <file>        : Database of mutations
+    --bed <file>       : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
+    --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
+
+  Optional:
+    --output-format <text>       : output format for variants (annovar | vcf) [default vcf]
+    --variant-type <text>        : mutation type (snp, del, ins, indel, all: everything) [default indel]
+    --min-ins-size <int>         : minimum size of an insertion [default 1]
+    --max-ins-size <int>         : maximum size of an insertion [default 1000000000]
+    --min-del-size <int>         : minimum size of a deletion [default 1]
+    --max-del-size <int>         : maximum size of a deletion [default 1000000000]
+    --min-alt-count-tumor <int>  : minimum alternative count in the tumor [default 4]
+    --max-alt-count-normal <int> : maximum alternative count in the normal [0]
+    --min-vaf-tumor <float>      : minimum variant allele frequency (AlleleCov/TotCov) in the tumor [default 0.05]
+    --max-vaf-normal <float>     : maximum variant allele frequency (AlleleCov/TotCov) in the normal [default 0]
+    --min-coverage-tumor <int>   : minimum coverage in the tumor [default 4]
+    --max-coverage-tumor <int>   : maximum coverage in the tumor [default 1000000000]
+    --min-coverage-normal <int>  : minimum coverage in the normal [default 10]
+    --max-coverage-normal <int>  : maximum coverage in the normal [default 1000000000]
+    --min-phred-fisher <float>   : minimum fisher exact test score [default 10]
+    --intarget                   : export mutations only inside the target regions from the BED file
+
+  Supported output formats:
+    1. annovar
+    2. vcf
+
+    NOTE: The database.db file can be found in the output directory for the single operation
+    mode or in the correspective subdirectories ("main" and "twopass' for denovo and soamtic modes).
+
 
 By default scalpel exports the list of detected indels in a file named variants.*.indel.* in the 
-selected output directory according to the default filtering parameters. 
+selected output directory according to default filtering parameters. 
 However it is recommended to explore different filtering criteria using the export tool.
-The three most important parameters are:
+Three important parameters are:
 
-1. mincov
-    * By default mutations that have a minimum coverage of 5 are exported.
+1. mininum altertnative count:
     * Change this number according to the type of study (germiline, somatic, denovo) and the expected coverage. 
     * Smaller values will give more sensitivity but increase the number of false-positive calls.
-2. maxchi2
+2. minimum variant allele frequency VAF (altCoverage/totalCoverage)
+    * Similarly to the minimum alternative count parameter, smaller values will increase sensitivity but reduce specificity.
+3. maximum chi-squared score:
     * Chi square test statistic computed using the reference and alternative coverage for the mutation.
     * Larger values will give more sensitivity but produce a large number of false-positives.
     * For germline and denovo discovery we recommend using chi-square score ≤ 20 to export high confidence indels.
-    * For somatic discovery instead larger values of chi-square are required to detect low frequency mutations but with reduced specificity (more false-positives).
-3. covratio
-    * This is the minimum coverage ratio to export mutations (altCoverage/totalCoverage).
-    * Similarly to the mincov parameter, smaller values will increase sensitivity but reduce specificity.
+4. minimum fisher exact test score:
+    * Fisher exact test statistic computedsuing the reference and alternative counts in tumor and normal samples. 
+    * Goal is to test the independence between the allele balances in the tumor and the normal.
+    * We recommend using a fisher score > 10 to export high confidence somatic indels.
 
-###### ANNOVAR OUTPUT FORMAT ######
+	
+###### VCF OUTPUT FORMAT ######
+	
+The list of candidate mutations is exported according to VCF format v4.1.
+Multi-sample VCFs are generated for somatic and denovo analysis
+Several filters are applyed to variants according to the input paramteres.
+If a variant is not labelled as "PASS" the reason for FILTER info field will provide a list of applyed filters:
+
+single mode filters:
+
+   ##FILTER=<ID=MS,Description="Microsatellite mutation (format: #LEN#MOTIF)">
+   ##FILTER=<ID=LowVaf,Description="low variant allele frequency (<0.05)">
+   ##FILTER=<ID=LowAltCnt,Description="low alternative allele count (<5)">
+   ##FILTER=<ID=HighAltCnt,Description="high alternative allele count (>1000000)">
+   ##FILTER=<ID=LowChi2score,Description="low chi-squared score (<0)">
+   ##FILTER=<ID=HigChi2score,Description="high chi-squared score (>20)">
+
+denovo mode filters:
+
+   ##FILTER=<ID=MS,Description="Microsatellite mutation (format: #LEN#MOTIF)">
+   ##FILTER=<ID=LowCovAff,Description="low coverage in affected sample (<5)">
+   ##FILTER=<ID=LowCovUnaff,Description="low coverage in unaffected samples (<10)">
+   ##FILTER=<ID=HighCovAff,Description="high coverage in affected sample (>1000000000)">
+   ##FILTER=<ID=HighCovUnaff,Description="high coverage in unaffected samples (>1000000000)">
+   ##FILTER=<ID=LowVafAff,Description="low variant allele frequency for affected sample (<0.05)">
+   ##FILTER=<ID=HighVafUnaff,Description="high variant allele frequency for unaffected sample (>0)">
+   ##FILTER=<ID=LowAltCntAff,Description="low alternative allele count for affected sample (<5)">
+   ##FILTER=<ID=HighAltCntUnaff,Description="high alternative allele count for unaffected sample (>0)">
+   ##FILTER=<ID=LowChi2score,Description="low chi-squared score (<0)">
+   ##FILTER=<ID=HigChi2score,Description="high chi-squared score (>1)">
+
+somatic moded filters:
+
+   ##FILTER=<ID=MS,Description="Microsatellite mutation (format: #LEN#MOTIF)">
+   ##FILTER=<ID=LowCovNormal,Description="low coverage in the normal (<10)">
+   ##FILTER=<ID=HighCovNormal,Description="high coverage in the normal (>1000000000)">
+   ##FILTER=<ID=LowCovTumor,Description="low coverage in the tumor (<4)">
+   ##FILTER=<ID=HighCovTumor,Description="high coverage in the tumor (>1000000000)">
+   ##FILTER=<ID=LowVafTumor,Description="low variant allele frequency for tumor (<0.05)">
+   ##FILTER=<ID=HighVafNormal,Description="high variant allele frequency for normal (>0)">
+   ##FILTER=<ID=LowAltCntTumor,Description="low alternative allele count for tumor (<4)">
+   ##FILTER=<ID=HighAltCntNormal,Description="high alternative allele count for normal (>0)">
+   ##FILTER=<ID=LowFisherScore,Description="low fisher exact test score for tumor-normal (<10)">
+
+The INFO fields contain the following genral information:
+	
+	- avgKCov     : average k-mer coverage for the mutation
+	- minKCov     : minimum k-mer coverage for the mutation (can be different from avgKCov for insertions)
+	- zygosity    : homozygous or heterozygous
+	- altKCov     : coverage of alternative alleles at locus (>0 for heterozygous mutation)
+	- covRatio    : coverage ratio computed as minKCov/(minKCov+altKCov)
+	- chi2score   : chi-squared statistic (based on coverage), it is recommended to use chi-square score ≤ 20 for high confidence indels.
+	- inheritance : if mutation is found in parents (for --denovo mode) or if found in normal (for --somatic mode)
+	- bestState   : state of the mutations as described below (only for --denovo and --somatic mode)  
+	- covState    : coverage state of the mutation as described below (only for --denovo and --somatic mode) 
+	
+The format of "bestState" for --denovo mode is:
+
+	"momR dadR affR sibR/momA dadA affA sibA"
+
+where (for example) momR stands for the number of copies of the reference allele
+in the mother’s genotype and affA stands for the number of copies of the alternative
+allele in the genotype of the affected child.
+	
+Similarly, the format of "bestState" for --somatic mode is:
+
+	"normalR tumorR/normalA tumorA"
+
+where (for example) normalR stands for the number of copies of the reference allele
+in the normal’s genotype and tumorA stands for the number of copies of the alternative
+allele in the genotype of the tumor.
+	
+The format of "covState" for --denovo mode is:
+
+	"momRcov dadRcov affRcov sibRcov/momAcov dadAcov affAcov sibAcov"
+
+where (for example) "momRcov" stands for the k-mer coverage of the reference allele
+in the mother’s genotype and "affAcov" stands for the k-mer coverage of the alternative
+allele in the genotype of the affected child.
+	
+Similarly, the format of "covState" for --somatic mode is:
+
+	"normalRcov tumorRcov/normalAcov tumorAcov"
+
+where (for example) "normalRcov" stands for the k-mer coverage of the reference allele
+in the normal’s genotype and "tumorAcov" stands for the k-mer coverage of the alternative
+allele in the genotype of the tumor.
+
+
+###### ANNOVAR OUTPUT FORMAT (obsolate )######
 
 The list of candidate mutations is exported according to the following format.
 Columns 1 to 5 describe the mutation according to the "annovar" format (<http://www.openbioinformatics.org/annovar/>).
@@ -251,53 +429,7 @@ Columns 1 to 5 describe the mutation according to the "annovar" format (<http://
 	- inheritance : if mutation is found in parents (for --denovo mode) or if found in normal (for --somatic mode)
 	- bestState   : state of the mutations as described below (only for --denovo and --somatic mode)  
 	- covState    : coverage state of the mutation as described below (only for --denovo and --somatic mode)
-	
-The format of "bestState" for --denovo mode is as follows:
 
-	"momR dadR affR sibR/momA dadA affA sibA"
-
-where (for example) momR stands for the number of copies of the reference allele
-in the mother’s genotype and affA stands for the number of copies of the alternative
-allele in the genotype of the affected child.
-	
-Similarly, the format of "bestState" for --somatic mode is as follows:
-
-	"normalR tumorR/normalA tumorA"
-
-where (for example) normalR stands for the number of copies of the reference allele
-in the normal’s genotype and tumorA stands for the number of copies of the alternative
-allele in the genotype of the tumor.
-	
-The format of "covState" for --denovo mode is as follows:
-
-	"momRcov dadRcov affRcov sibRcov/momAcov dadAcov affAcov sibAcov"
-
-where (for example) "momRcov" stands for the k-mer coverage of the reference allele
-in the mother’s genotype and "affAcov" stands for the k-mer coverage of the alternative
-allele in the genotype of the affected child.
-	
-Similarly, the format of "covState" for --somatic mode is as follows:
-
-	"normalRcov tumorRcov/normalAcov tumorAcov"
-
-where (for example) "normalRcov" stands for the k-mer coverage of the reference allele
-in the normal’s genotype and "tumorAcov" stands for the k-mer coverage of the alternative
-allele in the genotype of the tumor.
-	
-###### VCF OUTPUT FORMAT ######
-	
-The list of candidate mutations is exported according to VCF format v4.1.
-The INFO fields contain the following information (as described before in the ANNOVAR format):
-	
-	- avgKCov     : average k-mer coverage for the mutation
-	- minKCov     : minimum k-mer coverage for the mutation (can be different from avgKCov for insertions)
-	- zygosity    : homozygous or heterozygous
-	- altKCov     : coverage of alternative alleles at locus (>0 for heterozygous mutation)
-	- covRatio    : coverage ratio computed as minKCov/(minKCov+altKCov)
-	- chi2score   : chi-squared statistic (based on coverage), it is recommended to use chi-square score ≤ 20 for high confidence indels.
-	- inheritance : if mutation is found in parents (for --denovo mode) or if found in normal (for --somatic mode)
-	- bestState   : state of the mutations as described below (only for --denovo and --somatic mode)  
-	- covState    : coverage state of the mutation as described below (only for --denovo and --somatic mode) 
 
 ###### AUTHORS ######
 
@@ -309,6 +441,6 @@ The INFO fields contain the following information (as described before in the AN
 
 ###### CITATION ######
 
-	Narzisi G., O'Rawe J.A., Iossifov I., Fang H., Lee Y., Wang Z., Wu Y., Lyon G.J., Wigler M., Schatz M.C.
-	Accurate detection of de novo and transmitted INDELs within exome-capture data using micro-assembly
-	Nature Methods (DOI: 10.1038/nmeth.3069)
+	Narzisi G., O'Rawe J.A., Iossifov I., Fang H., Lee Y., Wang Z., Wu Y., Lyon G.J., Wigler M., Schatz M.C. 
+	Accurate de novo and transmitted indel detection in exome-capture data using microassembly. 
+	Nature Methods 11, 1033–1036 (2014) (DOI: 10.1038/nmeth.3069)
