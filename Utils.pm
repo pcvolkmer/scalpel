@@ -12,7 +12,7 @@ package Utils;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(runCmd leftNormalize uniq binarySearch inTarget bychrpos elapsedTime fisher_yates_shuffle Log10);
+@EXPORT = qw(runCmd leftNormalize uniq binarySearch inTarget bychrpos elapsedTime fisher_yates_shuffle Log10 genotype);
 @EXPORT_OK = qw($findVariants $findDenovos $findSomatic $exportTool $bamtools $samtools $bcftools);
 
 use strict;
@@ -33,6 +33,7 @@ our $bcftools     = "$Bin/bcftools-1.1/bcftools";
 
 # Run system command 
 #####################################################
+
 sub runCmd 
 { 
 	my $info = $_[0];
@@ -61,6 +62,7 @@ sub runCmd
 
 ## Normalize indel location to leftmost position
 #####################################################
+
 sub leftNormalize {
 	my $indel = ${$_[0]};
 	my $delta = $_[1];
@@ -166,6 +168,7 @@ sub leftNormalize {
 
 ## return unique elements of input list
 #####################################################
+
 sub uniq {
     return keys %{{ map { $_ => 1 } @_ }};
 }
@@ -194,6 +197,7 @@ sub binarySearch {
 ## return true if mutation is in target (start or end
 ## positions intersect the target), false otherwise
 #####################################################
+
 sub inTarget {
 	my $mutation = $_[0];
 	my $exons = $_[1];
@@ -243,6 +247,7 @@ sub bychrpos {
 
 # print total time elapsed 
 ##########################################
+
 sub elapsedTime {
 	my $time_taken = $_[0];
 	my $tool = $_[1];
@@ -263,8 +268,42 @@ sub elapsedTime {
 }
 
 
+
+# compute genotype info in VCF format (GT field)
+##########################################
+
+#0/0 - the sample is homozygous reference
+#0/1 - the sample is heterozygous, carrying 1 copy of each of the REF and ALT alleles
+#1/1 - the sample is homozygous alternate
+#1/2 - the sample is heterozygous, carrying 1 copy of the REF and 2 ALT alleles
+
+sub genotype {
+	my $R = $_[0]; # reference coverage
+	my $A = $_[1]; # alternative coverage
+	my $O = $_[2]; # other coverage (>0 for multiple alleles)
+	my $Z = $_[3]; # zygosity (het/hom)
+	my $GT = $_[4]; # GT field on VCF format
+	
+	if($R>0) {
+		if($A>0 && $O==0) { $Z = "het"; $GT = "0/1"; }
+		elsif($A>0 && $O>0) { $Z = "het"; $GT = "0/1"; }
+		elsif($A==0 && $O==0) { $Z = "hom"; $GT = "0/0"; }
+		elsif($A==0 && $O>0) { $Z = "hom"; $GT = "0/1"; }
+	}
+	elsif($R==0) { 
+		if($A>0 && $O==0) { $Z = "het"; $GT = "1/1"; }
+		elsif($A>0 && $O>0) { $Z = "het"; $GT = "1/1"; }
+		elsif($A==0 && $O==0) { $Z = "hom"; $GT = "?"; }
+		elsif($A==0 && $O>0) { $Z = "hom"; $GT = "1/1"; }
+	}
+	return ($Z, $GT);
+}
+
+
 # fisher_yates_shuffle( \@array ) : 
 # generate a random permutation of @array in place
+##########################################
+
 sub fisher_yates_shuffle {
     my $array = shift;
     my $i;
@@ -277,6 +316,7 @@ sub fisher_yates_shuffle {
 
 # log 10
 ##########################################
+
 sub Log10 {
         my $n = shift;
         return log($n)/log(10);

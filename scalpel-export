@@ -361,18 +361,29 @@ sub printHeader {
 		# single
 		print "##FILTER=<ID=LowVaf,Description=\"low variant allele frequency (<$minCovRatio)\">\n";
 		print "##FILTER=<ID=LowAltCnt,Description=\"low alternative allele count (<$minCov)\">\n";
+		print "##FILTER=<ID=HighAltCnt,Description=\"high alternative allele count (>$maxCov)\">\n";
 		
 		#denovo
-		print "##FILTER=<ID=LowCovUnaffected,Description=\"low coverage in unaffected samples (<$minCovUnaffected)\">\n";
+		print "##FILTER=<ID=LowCovAff,Description=\"low coverage in affected sample (<$minCovAffected)\">\n";		
+		print "##FILTER=<ID=LowCovUnaff,Description=\"low coverage in unaffected samples (<$minCovUnaffected)\">\n";
+		print "##FILTER=<ID=HighCovAff,Description=\"high coverage in affected sample (>$maxCovAffected)\">\n";
+		print "##FILTER=<ID=HighCovUnaff,Description=\"high coverage in unaffected samples (>$maxCovUnaffected)\">\n";
 		print "##FILTER=<ID=LowVafAff,Description=\"low variant allele frequency for affected sample (<$minVafAffected)\">\n";
+		print "##FILTER=<ID=HighVafUnaff,Description=\"high variant allele frequency for unaffected sample (>$maxVafUnaffected)\">\n";
 		print "##FILTER=<ID=LowAltCntAff,Description=\"low alternative allele count for affected sample (<$minAltCntAffected)\">\n";
+		print "##FILTER=<ID=HighAltCntUnaff,Description=\"high alternative allele count for unaffected sample (>$maxAltCntUnaffected)\">\n";
 		print "##FILTER=<ID=LowChi2score,Description=\"low chi-squared score (<$minchi2)\">\n";
 		print "##FILTER=<ID=HigChi2score,Description=\"high chi-squared score (>$maxchi2)\">\n";
 	
 		#somatic
 		print "##FILTER=<ID=LowCovNormal,Description=\"low coverage in the normal (<$minCovNormal)\">\n";
+		print "##FILTER=<ID=HighCovNormal,Description=\"high coverage in the normal (>$maxCovNormal)\">\n";
+		print "##FILTER=<ID=LowCovTumor,Description=\"low coverage in the tumor (<$minCovTumor)\">\n";
+		print "##FILTER=<ID=HighCovTumor,Description=\"high coverage in the tumor (>$maxCovTumor)\">\n";
 		print "##FILTER=<ID=LowVafTumor,Description=\"low variant allele frequency for tumor (<$minVafTumor)\">\n";
+		print "##FILTER=<ID=HighVafNormal,Description=\"high variant allele frequency for normal (>$maxVafNormal)\">\n";
 		print "##FILTER=<ID=LowAltCntTumor,Description=\"low alternative allele count for tumor (<$minAltCntTumor)\">\n";
+		print "##FILTER=<ID=HighAltCntNormal,Description=\"high alternative allele count for normal (>$maxAltCntNormal)\">\n";
 		print "##FILTER=<ID=LowFisherScore,Description=\"low fisher exact test score for tumor-normal (<$minPhredFisher)\">\n";
 		
 		print "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
@@ -538,30 +549,21 @@ sub printVariants {
 			my $term1 = (($o1-$e1)*($o1-$e1))/$e1;
 			my $term2 = (($o2-$e2)*($o2-$e2))/$e2;
 		
-			$chi2Score = sprintf('%.2f', $term1 + $term2);		
+			$chi2Score = sprintf('%.2f', $term1 + $term2);
 			if($zyg eq "hom") { $chi2Score = 0; }
+			
+			#genotype($R[0],$A[0],$O[0], \$zyg, \$gt);
 			$gt = $zyg eq "het" ? "0/1" : "1/1";
 			#print "$chi2Score\n";
 		}
 		
 		# assign genotype info
 		if($denovo) {
-						
-			if($R[0]>0 && $A[0]>0) { $zyg_mother = "het"; $gt_mother = "0/1"; }
-			elsif($R[0]==0 && $A[0]>0 && $O[0]==0) { $zyg_mother = "hom"; $gt_mother = "1/1"; }
-			elsif($R[0]>0 && $A[0]==0 && $O[0]==0) { $zyg_mother = "hom"; $gt_mother = "0/0"; }
 			
-			if($R[1]>0 && $A[1]>0) { $zyg_father = "het"; $gt_father = "0/1"; }
-			elsif($R[1]==0 && $A[1]>0 && $O[1]==0) { $zyg_father = "hom"; $gt_father = "1/1"; }
-			elsif($R[1]>0 && $A[1]==0 && $O[1]==0) { $zyg_father = "hom"; $gt_father = "0/0"; }
-			
-			if($R[2]>0 && $A[2]>0) { $zyg_affected = "het"; $gt_affected = "0/1"; }
-			elsif($R[2]==0 && $A[2]>0 && $O[2]==0) { $zyg_affected = "hom"; $gt_affected = "1/1"; }
-			elsif($R[2]>0 && $A[2]==0 && $O[2]==0) { $zyg_mother = "hom"; $gt_affected = "0/0"; }
-			
-			if($R[3]>0 && $A[3]>0) { $zyg_sibling = "het"; $gt_sibling = "0/1"; }
-			elsif($R[3]==0 && $A[3]>0 && $O[3]==0) { $zyg_sibling = "hom"; $gt_sibling = "1/1"; }
-			elsif($R[3]>0 && $A[3]==0 && $O[3]==0) { $zyg_sibling = "hom"; $gt_sibling = "0/0"; }
+			($zyg_mother, $gt_mother) = genotype($R[0],$A[0],$O[0], $zyg_mother, $gt_mother);
+			($zyg_father, $gt_father) = genotype($R[1],$A[1],$O[1], $zyg_father, $gt_father);
+			($zyg_affected, $gt_affected) = genotype($R[2],$A[2],$O[2], $zyg_affected, $gt_affected);
+			($zyg_sibling, $gt_sibling) = genotype($R[3],$A[3],$O[3], $zyg_sibling, $gt_sibling);
 		}
 		
 		#**************** Fisher exact test ****************#
@@ -579,7 +581,7 @@ sub printVariants {
 			#$A[0] = 10;
 			#$R[1] = 10;
 			#$A[1] = 30;
-			
+						
 			my $n1p = $R[0]+$R[1];  # n_ref + t_ref
 			my $np1 = $R[0]+$A[0];  # n_ref + n_alt
 			my $n11 = $R[0];        # n_ref
@@ -589,21 +591,17 @@ sub printVariants {
 
 			my $pvalue = calculateStatistic(n11=>$n11, n1p=>$n1p, np1=>$np1, npp=>$npp);
 
-			#-10*log_10(P);			
-			$fisher_phred_score = sprintf('%.2f', -10*Log10($pvalue));
-			#print getStatisticName."Fisher phred score: ".$fisher_phred_score."\n";		
+			#-10*log_10(P);
+			if($pvalue <= 0) { $fisher_phred_score = 0; }
+			else { $fisher_phred_score = sprintf('%.2f', -10*Log10($pvalue)); }
 			
 			#0/0 - the sample is homozygous reference
 			#0/1 - the sample is heterozygous, carrying 1 copy of each of the REF and ALT alleles
 			#1/1 - the sample is homozygous alternate
 			
-			if($R[0]>0 && $A[0]>0) { $zyg_normal = "het"; $gt_normal = "0/1"; }
-			elsif($R[0]==0 && $A[0]>0 && $O[0]==0) { $zyg_normal = "hom"; $gt_normal = "1/1"; }
-			elsif($R[0]>0 && $A[0]==0 && $O[0]==0) { $zyg_normal = "hom"; $gt_normal = "0/0"; }
-			
-			if($R[1]>0 && $A[1]>0) { $zyg_tumor = "het"; $gt_tumor = "0/1"; }
-			elsif($R[1]==0 && $A[1]>0 && $O[1]==0) { $zyg_tumor = "hom"; $gt_tumor = "1/1"; }
-			elsif($R[1]>0 && $A[1]==0 && $O[1]==0) { $zyg_tumor = "hom"; $gt_tumor = "0/0"; }
+			#print "$R[0],$A[0],$O[0]\n";
+			($zyg_normal, $gt_normal) = genotype($R[0],$A[0],$O[0], $zyg_normal, $gt_normal);
+			($zyg_tumor, $gt_tumor) = genotype($R[1],$A[1],$O[1], $zyg_tumor, $gt_tumor);
 		}
 				
 		#**************** filtering ****************#
@@ -628,8 +626,10 @@ sub printVariants {
 				if ($filter eq "") { $filter = $filter . "LowAltCnt"; }
 				else { $filter = $filter . ",LowAltCnt"; }
 			}
-			next if($mut->{mincov} > $maxCov);
-			
+			if($mut->{mincov} > $maxCov) {
+				if ($filter eq "") { $filter = $filter . "HighAltCnt"; }
+				else { $filter = $filter . ",HighAltCnt"; }
+			}
 			if($covRatio < $minCovRatio) { # skip sequencing errors
 				if ($filter eq "") { $filter = $filter . "LowVaf"; }
 				else { $filter = $filter . ",LowVaf"; }
@@ -644,40 +644,47 @@ sub printVariants {
 			}
 		}
 		# denovo filtering
-		if($denovo) {
-			#next if($mother_cov < $minCovUnaffected);
-			#next if($father_cov < $minCovUnaffected);
-			#next if($sibling_cov < $minCovUnaffected);
-			next if($affected_cov < $minCovAffected);
-			
+		if($denovo) {			
+			if($affected_cov < $minCovAffected) { 
+				if ($filter eq "") { $filter = $filter . "LowCovAff"; }
+				else { $filter = $filter . ",LowCovAff"; }
+			}
 			if( ($mother_cov < $minCovUnaffected) && 
 			    ($father_cov < $minCovUnaffected) && 
 				($sibling_cov < $minCovUnaffected) ) {
-				if ($filter eq "") { $filter = $filter . "LowCovUnaffected"; }
-				else { $filter = $filter . ",LowCovUnaffected"; }
+				if ($filter eq "") { $filter = $filter . "LowCovUnaff"; }
+				else { $filter = $filter . ",LowCovUnaff"; }
 			}
-			
-			next if($mother_cov > $maxCovUnaffected);
-			next if($father_cov > $maxCovUnaffected);
-			next if($sibling_cov > $maxCovUnaffected);
-			next if($affected_cov > $maxCovAffected);
-	
+			if( ($mother_cov > $maxCovUnaffected) && 
+				($father_cov > $maxCovUnaffected) && 
+				($sibling_cov > $maxCovUnaffected) ) {
+				if ($filter eq "") { $filter = $filter . "HighCovUnaff"; }
+				else { $filter = $filter . ",HighCovUnaff"; }		
+			}
+			if($affected_cov > $maxCovAffected) { 
+				if ($filter eq "") { $filter = $filter . "HighCovAff"; }
+				else { $filter = $filter . ",HighCovAff"; }
+			}	
 			if($affected_vaf < $minVafAffected) { 
 				if ($filter eq "") { $filter = $filter . "LowVafAff"; }
 				else { $filter = $filter . ",LowVafAff"; }
-			}	
-			next if($mother_vaf > $maxVafUnaffected);
-			next if($father_vaf > $maxVafUnaffected);	
-			next if($sibling_vaf > $maxVafUnaffected);
-			
+			}
+			if( ($mother_vaf > $maxVafUnaffected) && 
+				($father_vaf > $maxVafUnaffected) && 
+				($sibling_vaf > $maxVafUnaffected) ) {
+				if ($filter eq "") { $filter = $filter . "HighVafUnaff"; }
+				else { $filter = $filter . ",HighVafUnaff"; }
+			}
 			if($affected_alt_cnt < $minAltCntAffected) {
 				if ($filter eq "") { $filter = $filter . "LowAltCntAff"; }
 				else { $filter = $filter . ",LowAltCntAff"; }
 			}				
-			next if($mother_alt_cnt > $maxAltCntUnaffected);
-			next if($father_alt_cnt > $maxAltCntUnaffected);
-			next if($sibling_alt_cnt > $maxAltCntUnaffected);
-			
+			if( ($mother_alt_cnt > $maxAltCntUnaffected) &&
+				($father_alt_cnt > $maxAltCntUnaffected) &&
+				($sibling_alt_cnt > $maxAltCntUnaffected) ) {
+				if ($filter eq "") { $filter = $filter . "HighAltCntUnaff"; }
+				else { $filter = $filter . ",HighAltCntUnaff"; }
+			}		
 			if($chi2Score > $maxchi2) { 
 				if ($filter eq "") { $filter = $filter . "HighChi2score"; }
 				else { $filter = $filter . ",HighChi2score"; }
@@ -693,20 +700,34 @@ sub printVariants {
 				if ($filter eq "") { $filter = $filter . "LowCovNormal"; }
 				else { $filter = $filter . ",LowCovNormal"; }	
 			}
-			next if($normal_cov > $maxCovNormal);
-			next if($tumor_cov < $minCovTumor);
-			next if($tumor_cov > $maxCovTumor);
+			if($normal_cov > $maxCovNormal) {
+				if ($filter eq "") { $filter = $filter . "HighCovNormal"; }
+				else { $filter = $filter . ",HighCovNormal"; }	
+			}
+			if($tumor_cov < $minCovTumor) {
+				if ($filter eq "") { $filter = $filter . "LowCovTumor"; }
+				else { $filter = $filter . ",LowCovTumor"; }
+			}
+			if($tumor_cov > $maxCovTumor) {
+				if ($filter eq "") { $filter = $filter . "HighCovTumor"; }
+				else { $filter = $filter . ",HighCovTumor"; }
+			}
 			if($tumor_vaf < $minVafTumor) { 
 				if ($filter eq "") { $filter = $filter . "LowVafTumor"; }
 				else { $filter = $filter . ",LowVafTumor"; }	
 			}
-			next if($normal_vaf > $maxVafNormal);
+			if($normal_vaf > $maxVafNormal) {
+				if ($filter eq "") { $filter = $filter . "HighVafNormal"; }
+				else { $filter = $filter . ",HighVafNormal"; }	
+			}
 			if($tumor_alt_cnt < $minAltCntTumor) {
 				if ($filter eq "") { $filter = $filter . "LowAltCntTumor"; }
 				else { $filter = $filter . ",LowAltCntTumor"; }	
 			}
-			next if($normal_alt_cnt > $maxAltCntNormal);
-			
+			if($normal_alt_cnt > $maxAltCntNormal) {
+				if ($filter eq "") { $filter = $filter . "HighAltCntNormal"; }
+				else { $filter = $filter . ",HighAltCntNormal"; }
+			}
 			if($fisher_phred_score < $minPhredFisher) { 
 				if ($filter eq "") { $filter = $filter . "LowFisherScore"; }
 				else { $filter = $filter . ",LowFisherScore"; }	
@@ -798,7 +819,7 @@ sub printVariants {
 				}
 				
 				$covState=~s/ /,/g; # no spaces allowed by vcf spec
-  				my $info = "AVGCOV=$avgcov;MINCOV=$mincov;ALTCOV=$altcov;ZYG=$zyg;COVRATIO=$covRatio;CHI2=$chi2Score;FISHERPHREDSCORE:$fisher_phred_score;INH=$inher;BESTSTATE=$bestState;COVSTATE=$covState";
+  				my $info = "AVGCOV=$avgcov;MINCOV=$mincov;ALTCOV=$altcov;ZYG=$zyg;COVRATIO=$covRatio;CHI2=$chi2Score;FISHERPHREDSCORE=$fisher_phred_score;INH=$inher;BESTSTATE=$bestState;COVSTATE=$covState";
   				if($t eq "snp") { 
 					if($single or $denovo) {
 						$str = sprintf("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", $chr, $start, ".", $ref, $qry, ".", $filter, $info, $format_str, $format_val); 

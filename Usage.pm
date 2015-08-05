@@ -38,7 +38,7 @@ my %defaults = (
 	pathlimit 			=> 1000000,
 	format				=> "vcf",
 	SVtype				=> "indel",
-	version_num			=> "0.4.1 (beta)",
+	version_num			=> "0.5.1 (beta), July 31 2015",
 	
 	minInsSize			=> 1,
 	maxInsSize			=> 1000000000,
@@ -54,7 +54,7 @@ my %defaults = (
 	maxCovTumor			=> 1000000000,
 	minCovNormal		=> 10,
 	maxCovNormal		=> 1000000000,
-	minPhredFisher		=> 20,
+	minPhredFisher		=> 10,
 	#maxPhredFisher		=> 1000000000,
 	
 	# denovo parameters

@@ -68,8 +68,8 @@ See included file MANUAL for details.
 Wrapper
 -------
 
-The `scalpel` executable is a Perl wrapper script that orchestrates 
-the pipeline analysis. It is recommended that you always run the `scalpel` directly.
+The `scalpel-discovery` and `scalpel-export` executables are a Perl wrapper script that orchestrate 
+the pipeline analysis. It is recommended that you always run the them directly.
 
 License
 =======
