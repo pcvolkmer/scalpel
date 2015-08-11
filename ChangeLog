@@ -1,10 +1,15 @@
 ----------------------------------------------------------
+0.4.2 | Tue August 11 2015
+
+  * fix some compilation issues for Mac OSX
+  
+----------------------------------------------------------
 0.4.1 | Wed April 15 2015
 
   * improved core algorithm of graph traversal
   * select min number of (src-to-sink) paths covering every edge of the graph
   * process each connected component separately
-  * source and sink are seletecd within each component (increased sensitivity)
+  * source and sink are selected within each component (increased sensitivity)
   * parallelization of alignments analysis (for "somatic" and "denovo" modes)
   * several C++ code optimization
   * changed option --validate to --two-pass. Updated manual and usage info
