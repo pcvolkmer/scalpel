@@ -60,7 +60,9 @@ public:
 
 	ostream & print(ostream & out) const
 	{
-		out << mer_m << ":" << ((ori_m == F) ? 'F' : 'R');
+		//out << mer_m << ":" << ((ori_m == F) ? 'F' : 'R');
+		string str = ((ori_m == F) ? ":F" : ":R");
+		out << mer_m << str;
 		return out;
 	}
 
