@@ -361,10 +361,10 @@ sub init()
 				
 					#copy denovo indels to main directory
 					if ($outformat eq "annovar") {
-						copy("$DIR_val/denovo.${min_cov}x.indel.annovar","$ABS_WORK/denovo.${min_cov}x.indel.annovar") or die "Copy failed: $!";
+						copy("$DIR_val/denovo.indel.annovar","$ABS_WORK/denovo.indel.annovar") or die "Copy failed: $!";
 					}
 					elsif ($outformat eq "vcf") {				
-						copy("$DIR_val/denovo.${min_cov}x.indel.vcf","$ABS_WORK/denovo.${min_cov}x.indel.vcf") or die "Copy failed: $!";
+						copy("$DIR_val/denovo.indel.vcf","$ABS_WORK/denovo.indel.vcf") or die "Copy failed: $!";
 					}
 				}
 			}
@@ -485,10 +485,10 @@ sub init()
 			
 					#copy somatic indels to main directory
 					if ($outformat eq "annovar") {
-						copy("$DIR_val/somatic.${min_cov}x.indel.annovar","$ABS_WORK/somatic.${min_cov}x.indel.annovar") or die "Copy failed: $!";
+						copy("$DIR_val/somatic.indel.annovar","$ABS_WORK/somatic.indel.annovar") or die "Copy failed: $!";
 					}
 					elsif ($outformat eq "vcf") {				
-						copy("$DIR_val/somatic.${min_cov}x.indel.vcf","$ABS_WORK/somatic.${min_cov}x.indel.vcf") or die "Copy failed: $!";
+						copy("$DIR_val/somatic.indel.vcf","$ABS_WORK/somatic.indel.vcf") or die "Copy failed: $!";
 					}
 				}
 			}

@@ -294,7 +294,7 @@ sub run {
 
 sub exportSVs {
 
-	print STDERR "-- Exporting SVs to file\n";
+	print STDERR "-- Exporting variants to file\n";
 			
 	my $command = "$exportTool --single ".
 		"--db $WORK/variants.db ".

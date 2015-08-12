@@ -641,7 +641,7 @@ sub findSomaticMut {
 
 sub exportSVs {
 	
-	print STDERR "-- Exporting SVs to file\n";
+	print STDERR "-- Exporting variants to file\n";
 		
 	# export somatic variants
 	

@@ -681,7 +681,7 @@ sub parseBestStateQuad {
 
 sub exportSVs {
 	
-	print STDERR "-- Exporting SVs to file\n";
+	print STDERR "-- Exporting variants to file\n";
 		
 	# export denovos 
 	my $command_denovo = "$exportTool --denovo ".
