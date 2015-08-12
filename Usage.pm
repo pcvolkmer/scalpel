@@ -389,4 +389,10 @@ OPTIONS:
     2. vcf
 	
     NOTE: The database.db file can be found in the output directory for the single operation 
-    mode or i
+    mode or in the correspective subdirectories ("main" and "twopass' for denovo and soamtic modes).
+
+END
+exit;
+}
+
+1;
