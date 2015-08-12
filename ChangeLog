@@ -1,7 +1,14 @@
 ----------------------------------------------------------
-0.4.2 | Tue August 11 2015
+0.5.2 | Wed August 12 2015
 
-  * fix some compilation issues for Mac OSX
+  * new user interface for the discovery tool (scalpel-discovery)
+  * new user interface for the export tool (scalpel-export)
+  * new options for exporting in each mode of operation (single, somatic, denovo)
+  * sample name extracted from BAM SM field
+  * fisher exact score for somatic variants (via the Text-NSP-1.27 perl module)
+  * multiple new filters (e.g.,LowFisherScore,LowAltCntTumor,etc.)
+  * multi-sample VCF output for somatic and denovo calls
+  * fix compilation issues for Mac OSX
   
 ----------------------------------------------------------
 0.4.1 | Wed April 15 2015
