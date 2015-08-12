@@ -29,11 +29,11 @@
 
 ###### DESCRIPTION ######
 
-Scalpel is a software package for detection of INDELs (INsertions and DELetions) mutations for 
+Scalpel is a software package for detection of indels (insertions and deletions) mutations for 
 next-generation sequencing data (e.g., Illumina). It supports three modes of operation: single, 
-denovo, and somatic. In single mode scalpel detects INDELs in one single dataset (e.g., one individual exome). 
-In denovo mode scalpel detects de novo INDELs in one family of four individuals (mom, dad, aff, sib). 
-In somatic mode scalpel detects somatic INDELs in a tumor/sample pair given in input.
+denovo, and somatic. In single mode scalpel detects indels in one single dataset (e.g., one individual exome). 
+In denovo mode scalpel detects de novo indels in one family of four individuals (mom, dad, aff, sib). 
+In somatic mode scalpel detects somatic indels in a tumor/sample pair given in input.
 
 For all the modes of operation, scalpel requires that the raw reads have been previously aligned with 
 BWA using default parameters. See BWA description (at <http://bio-bwa.sourceforge.net/bwa.shtml>) for more info.
@@ -180,7 +180,7 @@ OPTIONS:
 
 Export mutations from database in single, somatic or denovo mode
 
-###### export single mode ######
+###### export -- single mode ######
 	
 usage: scalpel-export --single --db <file> --bed <file> --ref <file> [OPTIONS]
 
@@ -216,7 +216,7 @@ OPTIONS:
     mode or in the correspective subdirectories ("main" and "twopass' for denovo and soamtic modes).
 	
 
-###### export denovo mode ######
+###### export -- denovo mode ######
 
 usage: scalpel-export --denovo --db <file> --bed <file> --ref <file> [OPTIONS]
 
@@ -257,7 +257,7 @@ OPTIONS:
     mode or in the correspective subdirectories ("main" and "twopass' for denovo and soamtic modes).
 
 	
-###### export somatic mode ######
+###### export -- somatic mode ######
 
 usage: scalpel-export --somatic --db <file> --bed <file> --ref <file> [OPTIONS]
 
@@ -303,26 +303,27 @@ However it is recommended to explore different filtering criteria using the expo
 Three important parameters are:
 
 1. mininum altertnative count:
-    * Change this number according to the type of study (germiline, somatic, denovo) and the expected coverage. 
+    * Change this number according to the type of study (germline, somatic, denovo) and the expected coverage. 
     * Smaller values will give more sensitivity but increase the number of false-positive calls.
 2. minimum variant allele frequency VAF (altCoverage/totalCoverage)
     * Similarly to the minimum alternative count parameter, smaller values will increase sensitivity but reduce specificity.
 3. maximum chi-squared score:
     * Chi square test statistic computed using the reference and alternative coverage for the mutation.
     * Larger values will give more sensitivity but produce a large number of false-positives.
-    * For germline and denovo discovery we recommend using chi-square score ≤ 20 to export high confidence indels.
+    * For germline and denovo discovery we recommend using chi-square score ≤ 20 to select high confidence indels.
 4. minimum fisher exact test score:
-    * Fisher exact test statistic computedsuing the reference and alternative counts in tumor and normal samples. 
+    * Fisher exact test statistic computed using the reference and alternative counts in tumor and normal samples. 
     * Goal is to test the independence between the allele balances in the tumor and the normal.
-    * We recommend using a fisher score > 10 to export high confidence somatic indels.
+    * We recommend using a fisher score > 10 to select high confidence somatic indels.
 
 	
 ###### VCF OUTPUT FORMAT ######
 	
 The list of candidate mutations is exported according to VCF format v4.1.
+Following the VCF best practices, high quality calls are marked as "PASS" in the FILTER column.
 Multi-sample VCFs are generated for somatic and denovo analysis
 Several filters are applyed to variants according to the input paramteres.
-If a variant is not labelled as "PASS" the reason for FILTER info field will provide a list of applyed filters:
+If a variant is not labelled as "PASS", the FILTER info field will provide the list of applyed filters:
 
 single mode filters:
 
@@ -360,7 +361,7 @@ somatic moded filters:
    ##FILTER=<ID=HighAltCntNormal,Description="high alternative allele count for normal (>0)">
    ##FILTER=<ID=LowFisherScore,Description="low fisher exact test score for tumor-normal (<10)">
 
-The INFO fields contain the following genral information:
+The INFO fields contain the following (somehow redundant) information:
 	
 	- avgKCov     : average k-mer coverage for the mutation
 	- minKCov     : minimum k-mer coverage for the mutation (can be different from avgKCov for insertions)
@@ -405,7 +406,7 @@ in the normal’s genotype and "tumorAcov" stands for the k-mer coverage of the 
 allele in the genotype of the tumor.
 
 
-###### ANNOVAR OUTPUT FORMAT (obsolate )######
+###### ANNOVAR OUTPUT FORMAT (obsolate) ######
 
 The list of candidate mutations is exported according to the following format.
 Columns 1 to 5 describe the mutation according to the "annovar" format (<http://www.openbioinformatics.org/annovar/>).

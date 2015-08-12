@@ -336,7 +336,9 @@ sub callSVs {
 		if($VERBOSE) { $command .= " --verbose"; }
 	
 		print STDERR "Command: $command\n" if($VERBOSE);
-		runCmd("findVariants", "$command");
+		my $retval = runCmd("findVariants", "$command");
+		
+		if($retval == -1) { exit; }
 		
 		if($ID eq "dad") { $father_name = extractSM($WORK,$ID); }
 		if($ID eq "mom") { $mother_name = extractSM($WORK,$ID); }
@@ -691,8 +693,8 @@ sub exportSVs {
 		"--min-alt-count-affected $min_cov ". 
 		"--min-vaf-affected $outratio";
 	if($intarget) { $command_denovo .= " --intarget"; }
-	if ($outformat eq "annovar") { $command_denovo .= " > $WORK/denovo.${min_cov}x.indel.annovar"; }
-	elsif ($outformat eq "vcf") { $command_denovo .= " > $WORK/denovo.${min_cov}x.indel.vcf"; }
+	if ($outformat eq "annovar") { $command_denovo .= " > $WORK/denovo.indel.annovar"; }
+	elsif ($outformat eq "vcf") { $command_denovo .= " > $WORK/denovo.indel.vcf"; }
 	
 	print STDERR "Command: $command_denovo\n" if($VERBOSE);
 	runCmd("export denovos", $command_denovo);
@@ -709,8 +711,8 @@ sub exportSVs {
 		"--max-vaf-unaffected 1.0 ".
 		"--min-vaf-affected $outratio";
 	if($intarget) { $command_inh .= " --intarget"; }
-	if ($outformat eq "annovar") { $command_inh .= " > $WORK/inherited.${min_cov}x.indel.annovar"; }
-	elsif ($outformat eq "vcf") { $command_inh .= " > $WORK/inherited.${min_cov}x.indel.vcf"; }
+	if ($outformat eq "annovar") { $command_inh .= " > $WORK/inherited.indel.annovar"; }
+	elsif ($outformat eq "vcf") { $command_inh .= " > $WORK/inherited.indel.vcf"; }
 	
 	print STDERR "Command: $command_inh\n" if($VERBOSE);
 	runCmd("export inherited", $command_inh);

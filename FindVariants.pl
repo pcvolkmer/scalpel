@@ -215,7 +215,7 @@ sub run {
 	
 	if ($cnt == 0) {
 		print STDERR "No regions to examine. Nothing to do! exit.\n";
-		exit;
+		exit -1;
 	}
 	
 	# decide if loading genome from fasta or use samtools faidx
@@ -306,8 +306,8 @@ sub exportSVs {
 		"--max-alt-count $max_cov ".
 		"--min-vaf $outratio";
 	if($intarget) { $command .= " --intarget"; }
-	if ($outformat eq "annovar") { $command .= " > $WORK/variants.${min_cov}x.indel.annovar"; }
-	elsif ($outformat eq "vcf") { $command .= " > $WORK/variants.${min_cov}x.indel.vcf"; }
+	if ($outformat eq "annovar") { $command .= " > $WORK/variants.indel.annovar"; }
+	elsif ($outformat eq "vcf") { $command .= " > $WORK/variants.indel.vcf"; }
 	
 	print STDERR "Command: $command\n" if($VERBOSE);
 	runCmd("ExportVariants", $command);

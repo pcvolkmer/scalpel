@@ -334,7 +334,9 @@ sub callSVs {
 	if($VERBOSE) { $command .= " --verbose"; }
 
 	print STDERR "Command: $command\n" if($VERBOSE);
-	runCmd("findVariants", "$command");
+	my $retval = runCmd("findVariants", "$command");
+	
+	return $retval;
 }
 
 ## Compute best state for the location of the mutation
@@ -587,6 +589,7 @@ sub findSomaticMut {
 	my $stats;
 	$stats->{tumor_name} = $tumor_name;
 	$stats->{normal_name} = $normal_name;
+	
 	$somaticSVs{stats} = $stats;
 	$commonSVs{stats} = $stats;
 		
@@ -651,8 +654,8 @@ sub exportSVs {
 		"--min-alt-count-tumor $min_cov ". 
 		"--min-vaf-tumor $outratio";
 	if($intarget) { $command_somatic .= " --intarget"; }
-	if ($outformat eq "annovar") { $command_somatic .= " > $WORK/somatic.${min_cov}x.indel.annovar"; }
-	elsif ($outformat eq "vcf") { $command_somatic .= " > $WORK/somatic.${min_cov}x.indel.vcf"; }
+	if ($outformat eq "annovar") { $command_somatic .= " > $WORK/somatic.indel.annovar"; }
+	elsif ($outformat eq "vcf") { $command_somatic .= " > $WORK/somatic.indel.vcf"; }
 	
 	print STDERR "Command: $command_somatic\n" if($VERBOSE);
 	runCmd("export somatic", $command_somatic);
@@ -670,8 +673,8 @@ sub exportSVs {
 		"--max-vaf-normal 1.0 ".
 		"--min-vaf-tumor $outratio";
 	if($intarget) { $command_comm .= " --intarget"; }
-	if ($outformat eq "annovar") { $command_comm .= " > $WORK/common.${min_cov}x.indel.annovar"; }
-	elsif ($outformat eq "vcf") { $command_comm .= " > $WORK/common.${min_cov}x.indel.vcf"; }
+	if ($outformat eq "annovar") { $command_comm .= " > $WORK/common.indel.annovar"; }
+	elsif ($outformat eq "vcf") { $command_comm .= " > $WORK/common.indel.vcf"; }
 	
 	print STDERR "Command: $command_comm\n" if($VERBOSE);
 	runCmd("export common", $command_comm);
@@ -687,9 +690,12 @@ sub processBAM {
 	
 	#my $toprocess = linkFiles("$bamfile", "$outdir"); # link input files
 	#if($toprocess == 1) {
-		callSVs($bamfile, $outdir); # call mutations on each family
+		my $retval = callSVs($bamfile, $outdir); # call mutations on each family
 	#}
 	#else { print STDERR "$outdir already processed!\n"; }
+	
+	#print STDERR "retval = $retval\n";
+	if($retval < 0) { exit; }
 	
 	if($outdir eq "tumor") {
 		$tumor_name = extractSM($WORK,$outdir);

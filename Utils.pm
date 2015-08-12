@@ -39,6 +39,8 @@ sub runCmd
 	my $info = $_[0];
 	my $cmd  = $_[1];
 	#my $VERBOSE = $_[2];
+	
+	my $retval = 0;
 
 	#print STDERR "$info ($cmd)...\n" if $VERBOSE;
 
@@ -46,7 +48,9 @@ sub runCmd
 	#die "failed ($rc)\n" if $rc; 
 	if ($rc) { 
 		print STDERR "Command failure: $info ($cmd)...\n";
-
+		
+		$retval = -1;
+		
 		if ($? == -1) {
 			print "failed to execute: $!\n";
 		}
@@ -58,6 +62,7 @@ sub runCmd
 			printf "child exited with value %d\n", $? >> 8;
 		}	
 	}
+	return $retval;
 }
 
 ## Normalize indel location to leftmost position
