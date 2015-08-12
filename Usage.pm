@@ -126,7 +126,7 @@ OPTIONS:
     --intarget         : export mutations only inside the target regions from the BED file
     --logs             : keep log files
 
-  Note 1: the list of detected indels is saved in file: OUTDIR/variants.*.indel.*
+  Note 1: the list of detected indels is saved in file: OUTDIR/variants.indel.*
   where OUTDIR is the output directory selected with option "--dir" [default $defaults{WORK}]
 
   Note 2: use the export tool (scalpel-export) to export mutations using different filtering criteria
@@ -183,7 +183,7 @@ OPTIONS:
     --intarget         : export mutations only inside the target regions from the BED file
     --logs             : keep log files
 
-  Note 1: the list of de novo indels is saved in file: OUTDIR/denovos.*.indel.*
+  Note 1: the list of de novo indels is saved in file: OUTDIR/denovos.indel.*
   where OUTDIR is the output directory selected with option "--dir" [default $defaults{WORK}]
 
   Note 2: use the export tool (scalpel-export) to export mutations using different filtering criteria
@@ -238,7 +238,7 @@ OPTIONS:
     --intarget            : export mutations only inside the target regions from the BED file
     --logs                : keep log files
 	
-  Note 1: the list of somatic indels is saved in file: OUTDIR/somatic.*.indel.* 
+  Note 1: the list of somatic indels is saved in file: OUTDIR/somatic.indel.* 
   where OUTDIR is the output directory selected with option "--dir" [default $defaults{WORK}].
   
   Note 2: use the export tool (scalpel-export) to export mutations using different filtering criteria
