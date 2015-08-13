@@ -355,7 +355,7 @@ sub printHeader {
 		print "##INFO=<ID=ZYG,Number=1,Type=String,Description=\"zygosity\">\n";
 		print "##INFO=<ID=COVRATIO,Number=1,Type=Float,Description=\"coverage ratio [(MINCOV)/(ALTCOV+MINCOV)]\">\n";
 		print "##INFO=<ID=CHI2,Number=1,Type=Float,Description=\"chi-square score\">\n";
-		print "##INFO=<ID=FISHERPHREDSCORE,Number=1,Type=Float,Description=\"fisher exact test score phred scaled for tumor-normal pairs\">\n";
+		print "##INFO=<ID=FISHERPHREDSCORE,Number=1,Type=Float,Description=\"phred-scaled p-value from the Fisher's exact test for tumor-normal allele counts\">\n";
 		print "##INFO=<ID=INH,Number=1,Type=String,Description=\"inheritance\">\n";
 		print "##INFO=<ID=BESTSTATE,Number=1,Type=String,Description=\"state of the mutation\">\n";
 		print "##INFO=<ID=COVSTATE,Number=1,Type=String,Description=\"coverage state of the mutation\">\n";
@@ -390,11 +390,11 @@ sub printHeader {
 			print "##FILTER=<ID=HighCovNormal,Description=\"high coverage in the normal (>$maxCovNormal)\">\n";
 			print "##FILTER=<ID=LowCovTumor,Description=\"low coverage in the tumor (<$minCovTumor)\">\n";
 			print "##FILTER=<ID=HighCovTumor,Description=\"high coverage in the tumor (>$maxCovTumor)\">\n";
-			print "##FILTER=<ID=LowVafTumor,Description=\"low variant allele frequency for tumor (<$minVafTumor)\">\n";
-			print "##FILTER=<ID=HighVafNormal,Description=\"high variant allele frequency for normal (>$maxVafNormal)\">\n";
-			print "##FILTER=<ID=LowAltCntTumor,Description=\"low alternative allele count for tumor (<$minAltCntTumor)\">\n";
-			print "##FILTER=<ID=HighAltCntNormal,Description=\"high alternative allele count for normal (>$maxAltCntNormal)\">\n";
-			print "##FILTER=<ID=LowFisherScore,Description=\"low fisher exact test score for tumor-normal (<$minPhredFisher)\">\n";
+			print "##FILTER=<ID=LowVafTumor,Description=\"low variant allele frequency in the tumor (<$minVafTumor)\">\n";
+			print "##FILTER=<ID=HighVafNormal,Description=\"high variant allele frequency in the normal (>$maxVafNormal)\">\n";
+			print "##FILTER=<ID=LowAltCntTumor,Description=\"low alternative allele count in the tumor (<$minAltCntTumor)\">\n";
+			print "##FILTER=<ID=HighAltCntNormal,Description=\"high alternative allele count in the normal (>$maxAltCntNormal)\">\n";
+			print "##FILTER=<ID=LowFisherScore,Description=\"low Fisher's exact test score for tumor-normal allele counts (<$minPhredFisher)\">\n";
 		}
 		print "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
 		print "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"k-mer Depth\">\n";
