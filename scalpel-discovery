@@ -203,13 +203,13 @@ sub init()
 		if($single)  {
 			if ($argcnt < 2) {
 				header(); 
-				usageSingle("scalpel --single");
+				usageSingle("scalpel-discovery --single");
 			}
-			usageSingle("scalpel --single") if ($help);
+			usageSingle("scalpel-discovery --single") if ($help);
 			if( (!defined $BAMFILE) || (!defined $BEDFILE) || (!defined $REF) ) { 
 				print STDERR "Required parameter missing!\n";
 				header(); 
-				usageSingle("scalpel --single");   
+				usageSingle("scalpel-discovery --single");   
 			}
 			else{ # run FindVariants.pl on input parameters
 				header(); # print header
@@ -250,13 +250,13 @@ sub init()
 		if($denovo)  { 
 			if ($argcnt < 2) {
 				header(); 
-				usageDenovo("scalpel --denovo");
+				usageDenovo("scalpel-discovery --denovo");
 			}
-			usageDenovo("scalpel --denovo") if ($help);
+			usageDenovo("scalpel-discovery --denovo") if ($help);
 			if( (!defined $BAMDAD) || (!defined $BAMMOM) || (!defined $BAMAFF) || (!defined $BAMSIB) || (!defined $BEDFILE) || (!defined $REF) ) { 
 				print STDERR "Required parameter missing!\n";
 				header(); 
-				usageDenovo("scalpel --denovo");   
+				usageDenovo("scalpel-discovery --denovo");   
 			}
 			else{ # run FindDenovos.pl on input parameters
 				header(); # print header
@@ -374,13 +374,13 @@ sub init()
 	
 			if ($argcnt < 2) {
 				header(); 
-				usageSomatic("scalpel --somatic");
+				usageSomatic("scalpel-discovery --somatic");
 			}
-			usageSomatic("scalpel --somatic") if ($help);
+			usageSomatic("scalpel-discovery --somatic") if ($help);
 			if( (!defined $BAMNORMAL) || (!defined $BAMTUMOR) || (!defined $BEDFILE) || (!defined $REF) ) { 
 				print STDERR "Required parameter missing!\n";
 				header(); 
-				usageSomatic("scalpel --somatic");   
+				usageSomatic("scalpel-discovery --somatic");   
 			}
 			else{ # run FindSomatic.pl on input parameters
 				header(); # print header

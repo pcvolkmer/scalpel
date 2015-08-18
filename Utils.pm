@@ -298,7 +298,7 @@ sub genotype {
 	elsif($R==0) { 
 		if($A>0 && $O==0) { $Z = "het"; $GT = "1/1"; }
 		elsif($A>0 && $O>0) { $Z = "het"; $GT = "1/1"; }
-		elsif($A==0 && $O==0) { $Z = "hom"; $GT = "?"; }
+		elsif($A==0 && $O==0) { $Z = "hom"; $GT = "."; }
 		elsif($A==0 && $O>0) { $Z = "hom"; $GT = "1/1"; }
 	}
 	return ($Z, $GT);

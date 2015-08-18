@@ -489,22 +489,22 @@ sub printVariants {
 		my @A; # alternative
 		my @O; # other
 		
-		my $gt = "?";
-		my $gt_tumor = "?";
-		my $gt_normal = "?";
+		my $gt = ".";
+		my $gt_tumor = ".";
+		my $gt_normal = ".";
 		
-		my $gt_mother = "?";
-		my $gt_father = "?";
-		my $gt_affected = "?";
-		my $gt_sibling = "?";
+		my $gt_mother = ".";
+		my $gt_father = ".";
+		my $gt_affected = ".";
+		my $gt_sibling = ".";
 		
-		my $zyg_normal = "?";
-		my $zyg_tumor = "?";
+		my $zyg_normal = ".";
+		my $zyg_tumor = ".";
 		
-		my $zyg_mother = "?";
-		my $zyg_father = "?";
-		my $zyg_affected = "?";
-		my $zyg_sibling = "?";
+		my $zyg_mother = ".";
+		my $zyg_father = ".";
+		my $zyg_affected = ".";
+		my $zyg_sibling = ".";
 		
 		if($covState ne "na") {
 			my ($REF,$ALT,$OTH) = split("/",$covState);
