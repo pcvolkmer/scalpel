@@ -484,7 +484,9 @@ sub printVariants {
 		my $tumor_vaf = 0.0;
 		my $tumor_alt_cnt = 0;
 		my $normal_alt_cnt = 0;
-
+		my $tumor_ref_cnt = 0;
+		my $normal_ref_cnt = 0;
+		
 		my @R; # reference
 		my @A; # alternative
 		my @O; # other
@@ -520,6 +522,8 @@ sub printVariants {
 				$tumor_vaf = ($tumor_cov == 0) ? 0 : $A[1]/$tumor_cov;
 				$tumor_alt_cnt = $A[1];
 				$normal_alt_cnt = $A[0];
+				$tumor_ref_cnt = $R[1];
+				$normal_ref_cnt = $R[0];
 			}
 			elsif ($size == 4) { # COVSTATE=26,31,21,38/0,0,16,0/0,0,0,0
 				$mother_cov   = $R[0] + $A[0] + $O[0];
@@ -577,11 +581,11 @@ sub printVariants {
 		}
 		
 		#**************** Fisher exact test ****************#
-        #          cnt2     ~cnt2
-        #  cnt1    n_ref    t_ref | n1p
-        # ~cnt1    n_alt    t_alt | n2p
-        #          --------------
-        #          np1      np2     npp
+        #          cnt2           ~cnt2
+        #  cnt1    n_ref+n_oth   t_ref+t_oth | n1p
+        # ~cnt1    n_alt         t_alt       | n2p
+        #          ---------------------------
+        #          np1              np2        npp
 		
 		my $fisher_phred_score = 0;
 		
@@ -592,12 +596,19 @@ sub printVariants {
 			#$R[1] = 10;
 			#$A[1] = 30;
 						
-			my $n1p = $R[0]+$R[1];  # n_ref + t_ref
-			my $np1 = $R[0]+$A[0];  # n_ref + n_alt
-			my $n11 = $R[0];        # n_ref
+			#my $n1p = $R[0]+$R[1];  # n_ref + t_ref
+			#my $np1 = $R[0]+$A[0];  # n_ref + n_alt
+			#my $n11 = $R[0];        # n_ref
+			#my $n2p = $A[0]+$A[1];  # n_alt + t_alt
+			#my $np2 = $R[1]+$A[1];  # n_ref + t_alt
+			#my $npp = $R[0]+$A[0]+$R[1]+$A[1]; # n_ref + n_alt + t_ref + t_alt
+			
+			my $n1p = $R[0]+$R[1]+$O[0]+$O[1];  # n_ref + t_ref + t_other + n_other
+			my $np1 = $R[0]+$A[0]+$O[0];  # n_ref + n_alt + n_other
+			my $n11 = $R[0]+$O[0];  # n_ref + n_other
 			my $n2p = $A[0]+$A[1];  # n_alt + t_alt
-			my $np2 = $R[1]+$A[1];  # n_ref + t_alt
-			my $npp = $R[0]+$A[0]+$R[1]+$A[1]; # n_ref + n_alt + t_ref + t_alt
+			my $np2 = $R[1]+$A[1]+$O[1];  # t_ref + t_alt + t_other
+			my $npp = $R[0]+$A[0]+$O[0]+$R[1]+$A[1]+$O[1]; # n_ref + n_alt +n_other + t_ref + t_alt + t_other
 
 			my $pvalue = calculateStatistic(n11=>$n11, n1p=>$n1p, np1=>$np1, npp=>$npp);
 
@@ -811,10 +822,10 @@ sub printVariants {
   					$format_val = "$gt:$altcov,$mincov:$totcov";
 				}
 				if($somatic) {					
-					$normal_residual_cov = $normal_cov - $normal_alt_cnt;
-					$tumor_residual_cov = $tumor_cov - $tumor_alt_cnt;
-  					$format_val_normal = "$gt_normal:$normal_residual_cov,$normal_alt_cnt:$normal_cov";
-  					$format_val_tumor = "$gt_tumor:$tumor_residual_cov,$tumor_alt_cnt:$tumor_cov";
+					#$normal_residual_cov = $normal_cov - $normal_alt_cnt;
+					#$tumor_residual_cov = $tumor_cov - $tumor_alt_cnt;
+  					$format_val_normal = "$gt_normal:$normal_ref_cnt,$normal_alt_cnt:$normal_cov";
+  					$format_val_tumor = "$gt_tumor:$tumor_ref_cnt,$tumor_alt_cnt:$tumor_cov";
 				}
 				if($denovo) {					
 					$mother_residual_cov = $mother_cov - $mother_alt_cnt;
