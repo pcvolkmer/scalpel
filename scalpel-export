@@ -645,113 +645,113 @@ sub printVariants {
 		if($single)  {
 			if($mut->{mincov} < $minCov) {
 				if ($filter eq "") { $filter = $filter . "LowAltCnt"; }
-				else { $filter = $filter . ",LowAltCnt"; }
+				else { $filter = $filter . ";LowAltCnt"; }
 			}
 			if($mut->{mincov} > $maxCov) {
 				if ($filter eq "") { $filter = $filter . "HighAltCnt"; }
-				else { $filter = $filter . ",HighAltCnt"; }
+				else { $filter = $filter . ";HighAltCnt"; }
 			}
 			if($covRatio < $minCovRatio) { # skip sequencing errors
 				if ($filter eq "") { $filter = $filter . "LowVaf"; }
-				else { $filter = $filter . ",LowVaf"; }
+				else { $filter = $filter . ";LowVaf"; }
 			}
 			if($chi2Score > $maxchi2) { 
 				if ($filter eq "") { $filter = $filter . "HighChi2score"; }
-				else { $filter = $filter . ",HighChi2score"; }
+				else { $filter = $filter . ";HighChi2score"; }
 			}
 			if($chi2Score < $minchi2) { 
 				if ($filter eq "") { $filter = $filter . "LowChi2score"; }
-				else { $filter = $filter . ",LowChi2score"; }
+				else { $filter = $filter . ";LowChi2score"; }
 			}
 		}
 		# denovo filtering
 		if($denovo) {			
 			if($affected_cov < $minCovAffected) { 
 				if ($filter eq "") { $filter = $filter . "LowCovAff"; }
-				else { $filter = $filter . ",LowCovAff"; }
+				else { $filter = $filter . ";LowCovAff"; }
 			}
 			if( ($mother_cov < $minCovUnaffected) && 
 			    ($father_cov < $minCovUnaffected) && 
 				($sibling_cov < $minCovUnaffected) ) {
 				if ($filter eq "") { $filter = $filter . "LowCovUnaff"; }
-				else { $filter = $filter . ",LowCovUnaff"; }
+				else { $filter = $filter . ";LowCovUnaff"; }
 			}
 			if( ($mother_cov > $maxCovUnaffected) && 
 				($father_cov > $maxCovUnaffected) && 
 				($sibling_cov > $maxCovUnaffected) ) {
 				if ($filter eq "") { $filter = $filter . "HighCovUnaff"; }
-				else { $filter = $filter . ",HighCovUnaff"; }		
+				else { $filter = $filter . ";HighCovUnaff"; }		
 			}
 			if($affected_cov > $maxCovAffected) { 
 				if ($filter eq "") { $filter = $filter . "HighCovAff"; }
-				else { $filter = $filter . ",HighCovAff"; }
+				else { $filter = $filter . ";HighCovAff"; }
 			}	
 			if($affected_vaf < $minVafAffected) { 
 				if ($filter eq "") { $filter = $filter . "LowVafAff"; }
-				else { $filter = $filter . ",LowVafAff"; }
+				else { $filter = $filter . ";LowVafAff"; }
 			}
 			if( ($mother_vaf > $maxVafUnaffected) && 
 				($father_vaf > $maxVafUnaffected) && 
 				($sibling_vaf > $maxVafUnaffected) ) {
 				if ($filter eq "") { $filter = $filter . "HighVafUnaff"; }
-				else { $filter = $filter . ",HighVafUnaff"; }
+				else { $filter = $filter . ";HighVafUnaff"; }
 			}
 			if($affected_alt_cnt < $minAltCntAffected) {
 				if ($filter eq "") { $filter = $filter . "LowAltCntAff"; }
-				else { $filter = $filter . ",LowAltCntAff"; }
+				else { $filter = $filter . ";LowAltCntAff"; }
 			}				
 			if( ($mother_alt_cnt > $maxAltCntUnaffected) &&
 				($father_alt_cnt > $maxAltCntUnaffected) &&
 				($sibling_alt_cnt > $maxAltCntUnaffected) ) {
 				if ($filter eq "") { $filter = $filter . "HighAltCntUnaff"; }
-				else { $filter = $filter . ",HighAltCntUnaff"; }
+				else { $filter = $filter . ";HighAltCntUnaff"; }
 			}		
 			if($chi2Score > $maxchi2) { 
 				if ($filter eq "") { $filter = $filter . "HighChi2score"; }
-				else { $filter = $filter . ",HighChi2score"; }
+				else { $filter = $filter . ";HighChi2score"; }
 			}
 			if($chi2Score < $minchi2) { 
 				if ($filter eq "") { $filter = $filter . "LowChi2score"; }
-				else { $filter = $filter . ",LowChi2score"; }
+				else { $filter = $filter . ";LowChi2score"; }
 			}			
 		}
 		# somatic filtering
 		if($somatic) {						
 			if($normal_cov < $minCovNormal) { 
 				if ($filter eq "") { $filter = $filter . "LowCovNormal"; }
-				else { $filter = $filter . ",LowCovNormal"; }	
+				else { $filter = $filter . ";LowCovNormal"; }	
 			}
 			if($normal_cov > $maxCovNormal) {
 				if ($filter eq "") { $filter = $filter . "HighCovNormal"; }
-				else { $filter = $filter . ",HighCovNormal"; }	
+				else { $filter = $filter . ";HighCovNormal"; }	
 			}
 			if($tumor_cov < $minCovTumor) {
 				if ($filter eq "") { $filter = $filter . "LowCovTumor"; }
-				else { $filter = $filter . ",LowCovTumor"; }
+				else { $filter = $filter . ";LowCovTumor"; }
 			}
 			if($tumor_cov > $maxCovTumor) {
 				if ($filter eq "") { $filter = $filter . "HighCovTumor"; }
-				else { $filter = $filter . ",HighCovTumor"; }
+				else { $filter = $filter . ";HighCovTumor"; }
 			}
 			if($tumor_vaf < $minVafTumor) { 
 				if ($filter eq "") { $filter = $filter . "LowVafTumor"; }
-				else { $filter = $filter . ",LowVafTumor"; }	
+				else { $filter = $filter . ";LowVafTumor"; }	
 			}
 			if($normal_vaf > $maxVafNormal) {
 				if ($filter eq "") { $filter = $filter . "HighVafNormal"; }
-				else { $filter = $filter . ",HighVafNormal"; }	
+				else { $filter = $filter . ";HighVafNormal"; }	
 			}
 			if($tumor_alt_cnt < $minAltCntTumor) {
 				if ($filter eq "") { $filter = $filter . "LowAltCntTumor"; }
-				else { $filter = $filter . ",LowAltCntTumor"; }	
+				else { $filter = $filter . ";LowAltCntTumor"; }	
 			}
 			if($normal_alt_cnt > $maxAltCntNormal) {
 				if ($filter eq "") { $filter = $filter . "HighAltCntNormal"; }
-				else { $filter = $filter . ",HighAltCntNormal"; }
+				else { $filter = $filter . ";HighAltCntNormal"; }
 			}
 			if($fisher_phred_score < $minPhredFisher) { 
 				if ($filter eq "") { $filter = $filter . "LowFisherScore"; }
-				else { $filter = $filter . ",LowFisherScore"; }	
+				else { $filter = $filter . ";LowFisherScore"; }	
 			}
 			#next if($fisher_phred_score > $maxPhredFisher);
 		}
