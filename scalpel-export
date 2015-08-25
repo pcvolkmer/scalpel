@@ -369,7 +369,7 @@ sub printHeader {
 			print "##FILTER=<ID=LowAltCnt,Description=\"low alternative allele count (<$minCov)\">\n";
 			print "##FILTER=<ID=HighAltCnt,Description=\"high alternative allele count (>$maxCov)\">\n";
 			print "##FILTER=<ID=LowChi2score,Description=\"low chi-squared score (<$minchi2)\">\n";
-			print "##FILTER=<ID=HigChi2score,Description=\"high chi-squared score (>$maxchi2)\">\n";
+			print "##FILTER=<ID=HighChi2score,Description=\"high chi-squared score (>$maxchi2)\">\n";
 		}
 		#denovo
 		if($denovo) {
@@ -382,7 +382,7 @@ sub printHeader {
 			print "##FILTER=<ID=LowAltCntAff,Description=\"low alternative allele count for affected sample (<$minAltCntAffected)\">\n";
 			print "##FILTER=<ID=HighAltCntUnaff,Description=\"high alternative allele count for unaffected sample (>$maxAltCntUnaffected)\">\n";
 			print "##FILTER=<ID=LowChi2score,Description=\"low chi-squared score (<$minchi2)\">\n";
-			print "##FILTER=<ID=HigChi2score,Description=\"high chi-squared score (>$maxchi2)\">\n";
+			print "##FILTER=<ID=HighChi2score,Description=\"high chi-squared score (>$maxchi2)\">\n";
 		}		
 		#somatic
 		if($somatic) {

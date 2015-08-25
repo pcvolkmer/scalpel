@@ -332,7 +332,7 @@ single mode filters:
    ##FILTER=<ID=LowAltCnt,Description="low alternative allele count (<5)">
    ##FILTER=<ID=HighAltCnt,Description="high alternative allele count (>1000000)">
    ##FILTER=<ID=LowChi2score,Description="low chi-squared score (<0)">
-   ##FILTER=<ID=HigChi2score,Description="high chi-squared score (>20)">
+   ##FILTER=<ID=HighChi2score,Description="high chi-squared score (>20)">
 
 denovo mode filters:
 
@@ -346,7 +346,7 @@ denovo mode filters:
    ##FILTER=<ID=LowAltCntAff,Description="low alternative allele count for affected sample (<5)">
    ##FILTER=<ID=HighAltCntUnaff,Description="high alternative allele count for unaffected sample (>0)">
    ##FILTER=<ID=LowChi2score,Description="low chi-squared score (<0)">
-   ##FILTER=<ID=HigChi2score,Description="high chi-squared score (>1)">
+   ##FILTER=<ID=HighChi2score,Description="high chi-squared score (>1)">
 
 somatic moded filters:
 
