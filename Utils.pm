@@ -293,13 +293,13 @@ sub genotype {
 		if($A>0 && $O==0) { $Z = "het"; $GT = "0/1"; }
 		elsif($A>0 && $O>0) { $Z = "het"; $GT = "0/1"; }
 		elsif($A==0 && $O==0) { $Z = "hom"; $GT = "0/0"; }
-		elsif($A==0 && $O>0) { $Z = "hom"; $GT = "0/1"; }
+		elsif($A==0 && $O>0) { $Z = "hom"; $GT = "0/0"; }
 	}
 	elsif($R==0) { 
 		if($A>0 && $O==0) { $Z = "het"; $GT = "1/1"; }
 		elsif($A>0 && $O>0) { $Z = "het"; $GT = "1/1"; }
 		elsif($A==0 && $O==0) { $Z = "hom"; $GT = "."; }
-		elsif($A==0 && $O>0) { $Z = "hom"; $GT = "1/1"; }
+		elsif($A==0 && $O>0) { $Z = "hom"; $GT = "."; }
 	}
 	return ($Z, $GT);
 }
