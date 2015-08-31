@@ -77,6 +77,8 @@ my $maxCovUnaffected = $defaults->{maxCovUnaffected};
 # single parameters
 my $minCov = $defaults->{min_cov};
 my $maxCov = $defaults->{max_cov};
+my $minAltCnt = $defaults->{min_alt_cnt};
+my $maxAltCnt = $defaults->{max_alt_cnt};
 my $maxchi2 = $defaults->{maxchi2};
 my $minchi2 = $defaults->{minchi2};
 # min coverage ratio (AleleCov/TotCov) for a mutation to be considered valid
@@ -209,8 +211,10 @@ GetOptions(
 	'max-chi2-score=f' => \$maxchi2,
 	
 	# parameters single
-    'min-alt-count=i'  => \$minCov,
-    'max-alt-count=i'  => \$maxCov,
+    'min-alt-count=i'  => \$minAltCnt,
+    'max-alt-count=i'  => \$maxAltCnt,
+    'min-coverage=i'   => \$minCov,
+    'max-coverage=i'   => \$maxCov,
     'min-vaf=f'   => \$minCovRatio,
 
 ) or usage(); 
@@ -366,8 +370,10 @@ sub printHeader {
 		# single
 		if($single) {
 			print "##FILTER=<ID=LowVaf,Description=\"low variant allele frequency (<$minCovRatio)\">\n";
-			print "##FILTER=<ID=LowAltCnt,Description=\"low alternative allele count (<$minCov)\">\n";
-			print "##FILTER=<ID=HighAltCnt,Description=\"high alternative allele count (>$maxCov)\">\n";
+			print "##FILTER=<ID=LowAltCnt,Description=\"low alternative allele count (<$minAltCnt)\">\n";
+			print "##FILTER=<ID=HighAltCnt,Description=\"high alternative allele count (>$maxAltCnt)\">\n";
+			print "##FILTER=<ID=LowCov,Description=\"low coverage (<$minCov)\">\n";
+			print "##FILTER=<ID=HighCov,Description=\"high coverage (>$maxCov)\">\n";
 			print "##FILTER=<ID=LowChi2score,Description=\"low chi-squared score (<$minchi2)\">\n";
 			print "##FILTER=<ID=HighChi2score,Description=\"high chi-squared score (>$maxchi2)\">\n";
 		}
@@ -643,11 +649,19 @@ sub printVariants {
 			next if($mut->{len} > $maxDelSize); 
 		}		
 		if($single)  {
-			if($mut->{mincov} < $minCov) {
+			if($totcov < $minCov) {
+				if ($filter eq "") { $filter = $filter . "LowCov"; }
+				else { $filter = $filter . ";LowCov"; }
+			}
+			if($totcov > $maxCov) {
+				if ($filter eq "") { $filter = $filter . "HighCov"; }
+				else { $filter = $filter . ";HighCov"; }
+			}
+			if($mut->{mincov} < $minAltCnt) {
 				if ($filter eq "") { $filter = $filter . "LowAltCnt"; }
 				else { $filter = $filter . ";LowAltCnt"; }
 			}
-			if($mut->{mincov} > $maxCov) {
+			if($mut->{mincov} > $maxAltCnt) {
 				if ($filter eq "") { $filter = $filter . "HighAltCnt"; }
 				else { $filter = $filter . ";HighAltCnt"; }
 			}

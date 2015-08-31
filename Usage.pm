@@ -72,6 +72,8 @@ my %defaults = (
 	# single paramters
 	min_cov 			=> 5,
 	max_cov				=> 1000000,
+	min_alt_cnt 		=> 5,
+	max_alt_cnt			=> 1000000,
 );
 
 #####################################################
@@ -276,8 +278,10 @@ OPTIONS:
     --max-ins-size <int>     : maximum size of an insertion [default $defaults{maxInsSize}]
     --min-del-size <int>     : minimum size of a deletion [default $defaults{minDelSize}]
     --max-del-size <int>     : maximum size of a deletion [default $defaults{maxDelSize}]
-    --min-alt-count <int>    : minimum alternative count [default $defaults{min_cov}]
-    --max-alt-count <int>    : maximum alternative count [default $defaults{max_cov}]
+    --min-alt-count <int>    : minimum alternative count [default $defaults{min_alt_cnt}]
+    --max-alt-count <int>    : maximum alternative count [default $defaults{max_alt_cnt}]
+    --min-coverage <int>     : minimum coverage [default $defaults{min_cov}]
+    --max-coverage <int>     : maximum coverage [default $defaults{max_cov}]
     --min-chi2-score <float> : minimum chi-square score [default $defaults{minchi2}]
     --max-chi2-score <float> : maximum chi-square score [default $defaults{maxchi2}]
     --min-vaf <float>        : minimum variant allele frequency (AlleleCov/TotCov) [default $defaults{outratio}]
