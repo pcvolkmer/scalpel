@@ -630,7 +630,7 @@ sub findSomaticMut {
 		#next if(exists $alnHashN{$k});		
 		if(exists $alnHashN{$k}) {
 			my $aln_mut = $alnHashN{$k};
-			if ($aln_mut->{ifm} > $maxNormalContamination) { next; }	
+			if ($aln_mut->{imf} > $maxNormalContamination) { next; }	
 		}
 		
 		# compute inheritance
