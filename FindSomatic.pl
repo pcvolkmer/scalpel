@@ -63,6 +63,7 @@ my $MAX_PROCESSES = $defaults->{MAX_PROCESSES};
 my $selected = $defaults->{selected};
 my $dfs_limit = $defaults->{pathlimit};
 my $outformat = $defaults->{format};
+my $maxNormalContamination = $defaults->{contaminant_fraction_normal};
 my $intarget;
 my $logs;
 my $STcalling;
@@ -129,6 +130,7 @@ GetOptions(
     'numprocs=i'   => \$MAX_PROCESSES,
     'coords=s'     => \$selected,
     'format=s'     => \$outformat,
+    'normalContamination=f' => \$maxNormalContamination,
 
 	# ouptut parameters
 	'intarget!'    => \$intarget,
@@ -185,6 +187,7 @@ sub printParams {
 	print PFILE "-- K-mer size (bp): $kmer\n";
 	print PFILE "-- coverage threshold: $cov_threshold\n";
 	print PFILE "-- low coverage threshold: $tip_cov_threshold\n";
+	print PFILE "-- normal contamination fraction: $maxNormalContamination\n";
 	print PFILE "-- size (bp) of the left and right extensions (radius): $radius\n";
 	print PFILE "-- window-size size (bp): $windowSize\n";
 	print PFILE "-- max coverage per region: $max_reg_cov\n";
@@ -530,8 +533,15 @@ sub parseBestState {
 		my @R = split("", $REF); # reference
 		my @A = split("", $ALT); # alternative
 		my $n=0; my $t=1;
+		
 		if ( ($A[$n]>0) && ($A[$t]>0) ) { # both in normal and tumor
-			$sv->{inheritance} = "normal";
+			if ($sv->{covratio} <= $maxNormalContamination) { # partially in normal (contamination)
+				$sv->{inheritance} = "contamination";
+				$sv->{somatic} = "yes";
+			}
+			else {
+				$sv->{inheritance} = "normal";
+			}
 		}
 		elsif ( ($A[$n]==0) && ($A[$t]>0) ) { # only in tumor
 			$sv->{inheritance} = "no";
@@ -610,14 +620,18 @@ sub findSomaticMut {
 		my $totcov = $mut->{altcov} + $mut->{mincov};
 		next if ($totcov < $min_cov);
 		
-		# skip mutation if reference for normal not sampled
+		# skip mutation if reference for normal not well sampled
 		next if (getTotalCov($mut,"normal") < $min_cov);
 		#next if (!exists $normalCov{$key});
 		#next if ($normalCov{$key} < $min_cov); # min cov requirement
 		
-		# skipt mutation if present in normal mutations from read alignments
+		# skip mutation if present in normal mutations from read alignments
 		#print STDERR "$k\n";
-		next if(exists $alnHashN{$k});
+		#next if(exists $alnHashN{$k});		
+		if(exists $alnHashN{$k}) {
+			my $aln_mut = $alnHashN{$k};
+			if ($aln_mut->{ifm} > $maxNormalContamination) { next; }	
+		}
 		
 		# compute inheritance
 		if($mut->{somatic} eq "yes") {

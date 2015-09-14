@@ -63,6 +63,7 @@ sub extractCoordsDB {
 	
 	my %exons;
 	my %variants;
+	my %dups; # used to remove duplicated locations
 	
 	print STDERR "Extract coordinates of candidates...";
 	
@@ -78,10 +79,14 @@ sub extractCoordsDB {
 		next if($mut->{type} eq "snp"); # skip SNPs
 				
 		my $chr = $mut->{chr};
-		my $pos = $mut->{pos};		
+		my $pos = $mut->{pos};
+		my $loc = "$chr\t$pos";
 		
-		print OUT "$chr\t$pos\n";
-		$cnt++
+		if( !(exists $dups{$loc}) ) {
+			print OUT "$loc\n";
+			$cnt++;
+			$dups{$loc} = 1;
+		}
 	}
 	
 	close OUT;
@@ -274,7 +279,21 @@ sub loadVCF {
 			my $pos = $fields[1];
 			my $ref = $fields[3];
 			my $alts = $fields[4];
+			my $info = $fields[7];
 			
+			# extract supporting coverage fror the allele
+			# IDV (=Maximum number of reads supporting an indel) and IMF (=Maximum fraction of reads supporting an indel)
+			my @I = split(';', $info);
+			
+			my $idv = 0;
+			my $imf = 0;
+			foreach (@I) {
+				my ($tag,$value) = split ('=',$_);		
+				if($tag eq "IDV") { $idv = $value; }
+				if($tag eq "IMF") { $imf = $value; }
+			} 
+			
+			# process each alternative allele
 			my @A = split(',', $alts);
 							
 			foreach (@A) { 
@@ -320,6 +339,8 @@ sub loadVCF {
 				$mut->{seq}  = $newalt;
 				$mut->{type} = $type;
 				$mut->{len}  = $len;
+				$mut->{idv}  = $idv;
+				$mut->{imf}  = $imf;
 
 				leftNormalize(\$mut, 300, $REF, $FAIDX, $genome);
 				#print STDERR "$mut->{chr}\t$mut->{pos}\t$mut->{ref}\t$mut->{seq}\t$mut->{type}\t$mut->{len}\n";

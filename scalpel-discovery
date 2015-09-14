@@ -66,6 +66,7 @@ my $MAX_PROCESSES = $defaults->{MAX_PROCESSES};
 my $sample = $defaults->{sample};
 my $selected = $defaults->{selected};
 my $dfs_limit = $defaults->{pathlimit};
+my $normalContaminationFraction = $defaults->{contaminant_fraction_normal};
 
 # output arguments
 my $intarget;
@@ -155,6 +156,7 @@ GetOptions(
     'mincov=i'     => \$min_cov,
     'maxcov=i'     => \$max_cov,
     'matchedcov=i' => \$minCovInMatch,
+    'normalContamination=f' => \$normalContaminationFraction,
     'minchi2=f'    => \$min_chi2,	
     'maxchi2=f'    => \$max_chi2,	
     'covratio=f'   => \$covratio,
@@ -398,6 +400,7 @@ sub init()
 					"--kmer $kmer ". 
 					"--covthr $cov_threshold ". 
 					"--lowcov $tip_cov_threshold ".
+					"--normalContamination $normalContaminationFraction ".
 					"--mincov $min_cov ".
 					"--covratio $covratio ".
 					"--outratio $outratio ".
@@ -411,7 +414,7 @@ sub init()
 					"--dir $DIR_main ".
 					"--numprocs $MAX_PROCESSES ".
 					"--format $outformat ".
-					"--coords $selected";	
+					"--coords $selected";
 				if($VERBOSE) { $command_main .= " --verbose"; }
 				if($intarget) { $command_main .= " --intarget"; }
 				if($logs) { $command_main .= " --logs"; }
@@ -460,6 +463,7 @@ sub init()
 						"--kmer $kmer ". 
 						"--covthr $cov_threshold ". 
 						"--lowcov $tip_cov_threshold ".
+						"--normalContamination $normalContaminationFraction ".
 						"--mincov $min_cov ".
 						"--covratio $covratio ".
 						"--outratio $outratio ".
