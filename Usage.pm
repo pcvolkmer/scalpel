@@ -55,7 +55,7 @@ my %defaults = (
 	minCovNormal		=> 10,
 	maxCovNormal		=> 1000000000,
 	minPhredFisher		=> 10,
-	contaminant_fraction_normal => 0.0,
+	contaminant_fraction_normal => 0.1,
 	#maxPhredFisher		=> 1000000000,
 	
 	# denovo parameters
@@ -220,22 +220,21 @@ OPTIONS:
     --ref    <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
-    --kmer <int>                  : k-mer size [default $defaults{kmer}]
-    --covthr <int>                : threshold used to select source and sink [default $defaults{cov_threshold}]
-    --lowcov <int>                : threshold used to remove low-coverage nodes [default $defaults{tip_cov_threshold}]
-    --covratio <float>            : minimum coverage ratio for sequencing errors (default: $defaults{covratio})
-    --normalContamination <float> : fraction of contamination of tumor sample in normal sample (default: $defaults{contaminant_fraction_normal})
-    --radius <int>                : left and right extension (in base-pairs) [default $defaults{radius}]
-    --window <int>                : window-size of the region to assemble (in base-pairs) [default $defaults{windowSize}]
-    --maxregcov <int>             : maximum average coverage allowed per region [default $defaults{max_reg_cov}]
-    --step <int>                  : delta shift for the sliding window (in base-pairs) [default $defaults{delta}]
-    --mapscore <int>              : minimum mapping quality for selecting reads to assemble [default $defaults{map_qual}]
-    --pathlimit <int>             : limit number of sequence paths to [default $defaults{pathlimit}]
-    --mismatches <int>            : max number of mismatches in near-perfect repeat detection [default $defaults{maxmismatch}]
-    --dir <directory>             : output directory [default $defaults{WORK}]
-    --numprocs <int>              : number of parallel jobs (1 for no parallelization) [default $defaults{MAX_PROCESSES}]
-    --coords <file>               : file with list of selected coordinates to examine [default $defaults{selected}]
-    --two-pass                    : perform second pass of analysis to confirm candidate calls
+    --kmer <int>          : k-mer size [default $defaults{kmer}]
+    --covthr <int>        : threshold used to select source and sink [default $defaults{cov_threshold}]
+    --lowcov <int>        : threshold used to remove low-coverage nodes [default $defaults{tip_cov_threshold}]
+    --covratio <float>    : minimum coverage ratio for sequencing errors (default: $defaults{covratio})
+    --radius <int>        : left and right extension (in base-pairs) [default $defaults{radius}]
+    --window <int>        : window-size of the region to assemble (in base-pairs) [default $defaults{windowSize}]
+    --maxregcov <int>     : maximum average coverage allowed per region [default $defaults{max_reg_cov}]
+    --step <int>          : delta shift for the sliding window (in base-pairs) [default $defaults{delta}]
+    --mapscore <int>      : minimum mapping quality for selecting reads to assemble [default $defaults{map_qual}]
+    --pathlimit <int>     : limit number of sequence paths to [default $defaults{pathlimit}]
+    --mismatches <int>    : max number of mismatches in near-perfect repeat detection [default $defaults{maxmismatch}]
+    --dir <directory>     : output directory [default $defaults{WORK}]
+    --numprocs <int>      : number of parallel jobs (1 for no parallelization) [default $defaults{MAX_PROCESSES}]
+    --coords <file>       : file with list of selected coordinates to examine [default $defaults{selected}]
+    --two-pass            : perform second pass of analysis to confirm candidate calls
 
   Output:
     --format              : export mutations in selected format (annovar | vcf) [default $defaults{format}]
@@ -331,7 +330,7 @@ OPTIONS:
     --min-alt-count-tumor <int>  : minimum alternative count in the tumor [default $defaults{minAltCntTumor}]
     --max-alt-count-normal <int> : maximum alternative count in the normal [$defaults{maxAltCntNormal}]
     --min-vaf-tumor <float>      : minimum variant allele frequency (AlleleCov/TotCov) in the tumor [default $defaults{minVafTumor}]
-    --max-vaf-normal <float>     : maximum variant allele frequency (AlleleCov/TotCov) in the normal [default $defaults{maxVafNormal}]
+    --max-vaf-normal <float>     : maximum variant allele frequency (AlleleCov/TotCov) in the normal, maximum value allowed 0.1 [default $defaults{maxVafNormal}]
     --min-coverage-tumor <int>   : minimum coverage in the tumor [default $defaults{minCovTumor}]
     --max-coverage-tumor <int>   : maximum coverage in the tumor [default $defaults{maxCovTumor}]
     --min-coverage-normal <int>  : minimum coverage in the normal [default $defaults{minCovNormal}]

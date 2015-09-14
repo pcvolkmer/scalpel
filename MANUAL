@@ -150,22 +150,21 @@ OPTIONS:
     --ref    <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
-    --kmer <int>                  : k-mer size [default 25]
-    --covthr <int>                : threshold used to select source and sink [default 5]
-    --lowcov <int>                : threshold used to remove low-coverage nodes [default 2]
-    --covratio <float>            : minimum coverage ratio for sequencing errors (default: 0.01)
-    --normalContamination <float> : fraction of contamination of tumor sample in normal sample (default: 0)
-    --radius <int>                : left and right extension (in base-pairs) [default 100]
-    --window <int>                : window-size of the region to assemble (in base-pairs) [default 400]
-    --maxregcov <int>             : maximum average coverage allowed per region [default 10000]
-    --step <int>                  : delta shift for the sliding window (in base-pairs) [default 100]
-    --mapscore <int>              : minimum mapping quality for selecting reads to assemble [default 1]
-    --pathlimit <int>             : limit number of sequence paths to [default 1000000]
-    --mismatches <int>            : max number of mismatches in near-perfect repeat detection [default 3]
-    --dir <directory>             : output directory [default ./outdir]
-    --numprocs <int>              : number of parallel jobs (1 for no parallelization) [default 1]
-    --coords <file>               : file with list of selected coordinates to examine [default null]
-    --two-pass                    : perform second pass of analysis to confirm candidate calls
+    --kmer <int>          : k-mer size [default 25]
+    --covthr <int>        : threshold used to select source and sink [default 5]
+    --lowcov <int>        : threshold used to remove low-coverage nodes [default 2]
+    --covratio <float>    : minimum coverage ratio for sequencing errors (default: 0.01)
+    --radius <int>        : left and right extension (in base-pairs) [default 100]
+    --window <int>        : window-size of the region to assemble (in base-pairs) [default 400]
+    --maxregcov <int>     : maximum average coverage allowed per region [default 10000]
+    --step <int>          : delta shift for the sliding window (in base-pairs) [default 100]
+    --mapscore <int>      : minimum mapping quality for selecting reads to assemble [default 1]
+    --pathlimit <int>     : limit number of sequence paths to [default 1000000]
+    --mismatches <int>    : max number of mismatches in near-perfect repeat detection [default 3]
+    --dir <directory>     : output directory [default ./outdir]
+    --numprocs <int>      : number of parallel jobs (1 for no parallelization) [default 1]
+    --coords <file>       : file with list of selected coordinates to examine [default null]
+    --two-pass            : perform second pass of analysis to confirm candidate calls
 
   Output:
     --format              : export mutations in selected format (annovar | vcf) [default vcf]
@@ -284,7 +283,7 @@ OPTIONS:
     --min-alt-count-tumor <int>  : minimum alternative count in the tumor [default 4]
     --max-alt-count-normal <int> : maximum alternative count in the normal [0]
     --min-vaf-tumor <float>      : minimum variant allele frequency (AlleleCov/TotCov) in the tumor [default 0.05]
-    --max-vaf-normal <float>     : maximum variant allele frequency (AlleleCov/TotCov) in the normal [default 0]
+    --max-vaf-normal <float>     : maximum variant allele frequency (AlleleCov/TotCov) in the normal, maximum value allowed 0.1 [default 0]
     --min-coverage-tumor <int>   : minimum coverage in the tumor [default 4]
     --max-coverage-tumor <int>   : maximum coverage in the tumor [default 1000000000]
     --min-coverage-normal <int>  : minimum coverage in the normal [default 10]

@@ -130,7 +130,7 @@ GetOptions(
     'numprocs=i'   => \$MAX_PROCESSES,
     'coords=s'     => \$selected,
     'format=s'     => \$outformat,
-    'normalContamination=f' => \$maxNormalContamination,
+    #'normalContamination=f' => \$maxNormalContamination,
 
 	# ouptut parameters
 	'intarget!'    => \$intarget,
@@ -187,7 +187,7 @@ sub printParams {
 	print PFILE "-- K-mer size (bp): $kmer\n";
 	print PFILE "-- coverage threshold: $cov_threshold\n";
 	print PFILE "-- low coverage threshold: $tip_cov_threshold\n";
-	print PFILE "-- normal contamination fraction: $maxNormalContamination\n";
+	#print PFILE "-- normal contamination fraction: $maxNormalContamination\n";
 	print PFILE "-- size (bp) of the left and right extensions (radius): $radius\n";
 	print PFILE "-- window-size size (bp): $windowSize\n";
 	print PFILE "-- max coverage per region: $max_reg_cov\n";
