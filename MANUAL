@@ -53,11 +53,13 @@ OPTIONS:
     --verbose          : verbose mode
 
   Required:
+  
     --bam <BAM file>   : BAM file with the reference-aligned reads
     --bed <BED file>   : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
     --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
+  
     --kmer <int>       : k-mer size [default 25]
     --covthr <int>     : threshold used to select source and sink [default 5]
     --lowcov <int>     : threshold used to remove low-coverage nodes [default 2]
@@ -75,6 +77,7 @@ OPTIONS:
     --coords <file>    : file with list of selected locations to examine [default null]
 
   Output:
+  
     --format           : export mutations in selected format (annovar | vcf) [default vcf]
     --intarget         : export mutations only inside the target regions from the BED file
     --logs             : keep log files
@@ -97,6 +100,7 @@ OPTIONS:
     --verbose          : verbose mode
 
   Required:
+  
     --dad <BAM file>   : father BAM file
     --mom <BAM file>   : mother BAM file
     --aff <BAM file>   : affected child BAM file
@@ -105,6 +109,7 @@ OPTIONS:
     --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
+  
     --kmer <int>       : k-mer size [default 25]
     --covthr <int>     : threshold used to select source and sink [default 5]
     --lowcov <int>     : threshold used to remove low-coverage nodes [default 2]
@@ -122,6 +127,7 @@ OPTIONS:
     --two-pass         : perform second pass of analysis to confirm candidate calls
 
   Output:
+  
     --format           : export mutations in selected format (annovar | vcf) [default vcf]
     --intarget         : export mutations only inside the target regions from the BED file
     --logs             : keep log files
@@ -144,12 +150,14 @@ OPTIONS:
     --verbose             : verbose mode
 
   Required:
+  
     --normal <BAM file>   : normal BAM file
     --tumor  <BAM file>   : tumor BAM file
     --bed    <BED file>   : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
     --ref    <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
+  
     --kmer <int>          : k-mer size [default 25]
     --covthr <int>        : threshold used to select source and sink [default 5]
     --lowcov <int>        : threshold used to remove low-coverage nodes [default 2]
@@ -167,6 +175,7 @@ OPTIONS:
     --two-pass            : perform second pass of analysis to confirm candidate calls
 
   Output:
+  
     --format              : export mutations in selected format (annovar | vcf) [default vcf]
     --intarget            : export mutations only inside the target regions from the BED file
     --logs                : keep log files
@@ -190,11 +199,13 @@ OPTIONS:
     --verbose          : verbose mode
 
   Required:
+  
     --db <file>        : Database of mutations
     --bed <file>       : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
     --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
+  
     --output-format <text>   : output format for variants (annovar | vcf) [default vcf]
     --variant-type <text>    : mutation type (snp, del, ins, indel, all: everything) [default indel]
     --min-ins-size <int>     : minimum size of an insertion [default 1]
@@ -211,6 +222,7 @@ OPTIONS:
     --intarget               : export mutations only inside the target regions from the BED file
 
   Supported output formats:
+  
     1. annovar
     2. vcf
 
@@ -228,11 +240,13 @@ OPTIONS:
     --verbose          : verbose mode
 
   Required:
+  
     --db <file>        : Database of mutations
     --bed <file>       : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
     --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
+  
     --output-format <text>           : output format for variants (annovar | vcf) [default vcf]
     --variant-type <text>            : mutation type (snp, del, ins, indel, all: everything) [default indel]
     --min-ins-size <int>             : minimum size of an insertion [default 1]
@@ -252,6 +266,7 @@ OPTIONS:
     --intarget                       : export mutations only inside the target regions from the BED file
 
   Supported output formats:
+  
     1. annovar
     2. vcf
 
@@ -269,11 +284,13 @@ OPTIONS:
     --verbose          : verbose mode
 
   Required:
+  
     --db <file>        : Database of mutations
     --bed <file>       : file with list of regions (BED format) in sorted order or single region in format chr:start-end (example: 1:31656613-31656883)
     --ref <FASTA file> : reference genome in FASTA format (same one that was used to create the BAM file)
 
   Optional:
+  
     --output-format <text>       : output format for variants (annovar | vcf) [default vcf]
     --variant-type <text>        : mutation type (snp, del, ins, indel, all: everything) [default indel]
     --min-ins-size <int>         : minimum size of an insertion [default 1]
@@ -292,6 +309,7 @@ OPTIONS:
     --intarget                   : export mutations only inside the target regions from the BED file
 
   Supported output formats:
+  
     1. annovar
     2. vcf
 
