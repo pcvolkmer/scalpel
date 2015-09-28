@@ -287,10 +287,12 @@ sub loadVCF {
 			
 			my $idv = 0;
 			my $imf = 0;
+			#my $dp  = 0;
 			foreach (@I) {
 				my ($tag,$value) = split ('=',$_);		
 				if($tag eq "IDV") { $idv = $value; }
 				if($tag eq "IMF") { $imf = $value; }
+				#if($tag eq "DP")  { $dp = $value; }			
 			} 
 			
 			# process each alternative allele
@@ -304,6 +306,8 @@ sub loadVCF {
 				my $type;
 				my $newref;
 				my $newalt;
+				my $prevbpalt;
+				my $prevbpref;
 				my $len;
 				if(length($ref)==1 && length($alt)==1 ) {
 					$type = "snp";
@@ -319,6 +323,8 @@ sub loadVCF {
 					$len = length($ref)-length($alt);
 					$newalt = ('-' x $len);
 					$newref = substr($ref,1,$len);
+					$prevbpref = substr($ref,0,1);
+					$prevbpalt = $prevbpref;
 					$pos+=1;
 				}
 				elsif(length($ref) < length($alt)) {
@@ -328,6 +334,8 @@ sub loadVCF {
 					#$len = length($newalt);
 					$len = length($alt)-length($ref);
 					$newalt = substr($alt,1,$len);
+					$prevbpalt = substr($alt,0,1);
+					$prevbpref = $prevbpalt;
 					$newref = ('-' x $len);
 					$pos+=1;
 				}
@@ -341,6 +349,14 @@ sub loadVCF {
 				$mut->{len}  = $len;
 				$mut->{idv}  = $idv;
 				$mut->{imf}  = $imf;
+				$mut->{prevbpref} = $prevbpref;
+				$mut->{prevbpalt} = $prevbpalt;
+				$mut->{avgcov} = $idv;
+				$mut->{mincov} = $idv;
+				$mut->{status} = "ok";
+				$mut->{zygosity} = "na";
+				$mut->{altcov} = 0;
+				$mut->{inheritance} = "na";
 
 				leftNormalize(\$mut, 300, $REF, $FAIDX, $genome);
 				#print STDERR "$mut->{chr}\t$mut->{pos}\t$mut->{ref}\t$mut->{seq}\t$mut->{type}\t$mut->{len}\n";

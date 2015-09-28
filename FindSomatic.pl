@@ -536,7 +536,7 @@ sub parseBestState {
 		
 		if ( ($A[$n]>0) && ($A[$t]>0) ) { # both in normal and tumor
 			if ($sv->{covratio} <= $maxNormalContamination) { # partially in normal (contamination)
-				$sv->{inheritance} = "contamination";
+				$sv->{inheritance} = "normal";
 				$sv->{somatic} = "yes";
 			}
 			else {
@@ -626,12 +626,12 @@ sub findSomaticMut {
 		#next if ($normalCov{$key} < $min_cov); # min cov requirement
 		
 		# skip mutation if present in normal mutations from read alignments
-		#print STDERR "$k\n";
 		#next if(exists $alnHashN{$k});		
-		if(exists $alnHashN{$k}) {
-			my $aln_mut = $alnHashN{$k};
-			if ($aln_mut->{imf} > $maxNormalContamination) { next; }	
-		}
+		#if(exists $alnHashN{$k}) {
+			#next;
+			#my $aln_mut = $alnHashN{$k};
+			#if ($aln_mut->{imf} > $maxNormalContamination) { next; }	
+		#}
 		
 		# compute inheritance
 		if($mut->{somatic} eq "yes") {
@@ -807,6 +807,21 @@ sub callMutFromAlignment {
 	}
 }
 
+## update table of normal variants based on aligment analysis
+## (only for loci with variant in the tumor
+#####################################################
+
+sub updateNormalVariants {
+
+	foreach my $key (keys %tumorSVs) {
+		next if($key eq "numPaths");
+		
+		if( (exists $alnHashN{$key}) && (!exists $normalSVs{$key}) ) { # add varaint for normal
+			$normalSVs{$key} = $alnHashN{$key};
+		}
+	}
+}
+
 ## analize alignments
 #####################################################
 sub alignmentAnalysis {
@@ -854,8 +869,9 @@ printParams("$WORK/parameters.txt"); # print parameters
 processBAM($BAMNORMAL, "normal"); # process normal
 processBAM($BAMTUMOR, "tumor"); # process tumor
 loadHashes(); # load mutations and coverage info
-computeBestState(); # compute bestState for each mutation
 if($STcalling) { callMutFromAlignment(); } # call mutations from alignment using samtools
+updateNormalVariants();
+computeBestState(); # compute bestState for each mutation
 findSomaticMut(); # detect somatic mutations in tumor
 exportSVs(); # export mutations to file
 
