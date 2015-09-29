@@ -346,6 +346,8 @@ sub callSVs {
 #####################################################
 sub computeBestState {
 	
+	print STDERR "-- Compute best state for each variant\n";
+	
 	my $vars;	
 	my $covthr = 0; # min cov threshold to remove sequencing errors
 	
@@ -813,10 +815,12 @@ sub callMutFromAlignment {
 
 sub updateNormalVariants {
 
+	print STDERR "-- Update supporting coverage in normal\n";
+
 	foreach my $key (keys %tumorSVs) {
 		next if($key eq "numPaths");
 		
-		if( (exists $alnHashN{$key}) && (!exists $normalSVs{$key}) ) { # add varaint for normal
+		if( (exists $alnHashN{$key}) && (!exists $normalSVs{$key}) ) { # add variant in normal
 			$normalSVs{$key} = $alnHashN{$key};
 		}
 	}
@@ -869,8 +873,10 @@ printParams("$WORK/parameters.txt"); # print parameters
 processBAM($BAMNORMAL, "normal"); # process normal
 processBAM($BAMTUMOR, "tumor"); # process tumor
 loadHashes(); # load mutations and coverage info
-if($STcalling) { callMutFromAlignment(); } # call mutations from alignment using samtools
-updateNormalVariants();
+if($STcalling) { 
+	callMutFromAlignment(); 
+	updateNormalVariants();
+} # call mutations from alignment using samtools
 computeBestState(); # compute bestState for each mutation
 findSomaticMut(); # detect somatic mutations in tumor
 exportSVs(); # export mutations to file
