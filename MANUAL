@@ -14,11 +14,15 @@
 
 ###### SYNOPSIS ######
 
+DISCOVERY:
+
 	scalpel-discovery --single --bam <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
 
 	scalpel-discovery --denovo --dad <BAM file> --mom <BAM file> --aff <BAM file> --sib <BAM file> --bed <BED file> --ref <FASTA file> [OPTIONS]
 
 	scalpel-discovery --somatic --normal <BAM file> --tumor <BAM file> --bed <BEX file> --ref <FASTA file> [OPTIONS]
+
+EXPORT:
 	
 	scalpel-export --single --db <DB file> --bed <BED file> --ref <FASTA file> [OPTIONS]
 	
