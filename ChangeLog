@@ -1,4 +1,10 @@
 ----------------------------------------------------------
+0.5.3 | Mon January 25 2016
+
+  * faster graph traversal for finding repeats; 20% to 30% speedup
+  * fixed missing sample name in VCF header when no variants to export
+  
+----------------------------------------------------------
 0.5.2 | Wed August 12 2015
 
   * new user interface for the discovery tool (scalpel-discovery)
