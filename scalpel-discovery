@@ -314,6 +314,13 @@ sub init()
 					my $num_calls = extractCoordsDB($dbfile, $BEDFILE, $intarget, $outfile);				
 					if ($num_calls == 0) {
 						print STDERR "No candidate calls to validate. Nothing to do! exit.\n";
+						
+						# copy denovos DB over twopass direcotry (needed to correctly extract sample name info for empty VCF file)
+						mkdir "$ABS_WORK/twopass" if ! -r "$ABS_WORK/twopass";
+						copy("$ABS_WORK/main/denovos.db.dir","$ABS_WORK/twopass/denovos.db.dir") or die "Copy failed: $!";
+						copy("$ABS_WORK/main/denovos.db.lock","$ABS_WORK/twopass/denovos.db.lock") or die "Copy failed: $!";
+						copy("$ABS_WORK/main/denovos.db.pag","$ABS_WORK/twopass/denovos.db.pag") or die "Copy failed: $!";
+						
 						exit;
 					}
 			
@@ -439,6 +446,13 @@ sub init()
 					my $num_calls = extractCoordsDB($dbfile, $BEDFILE, $intarget, $outfile);
 					if ($num_calls == 0) {
 						print STDERR "No candidate calls to validate. Nothing to do! exit.\n";
+						
+						# copy somatic DB over twopass direcotry (needed to correctly extract sample name info for empty VCF file)
+						mkdir "$ABS_WORK/twopass" if ! -r "$ABS_WORK/twopass";
+						copy("$ABS_WORK/main/somatic.db.dir","$ABS_WORK/twopass/somatic.db.dir") or die "Copy failed: $!";
+						copy("$ABS_WORK/main/somatic.db.lock","$ABS_WORK/twopass/somatic.db.lock") or die "Copy failed: $!";
+						copy("$ABS_WORK/main/somatic.db.pag","$ABS_WORK/twopass/somatic.db.pag") or die "Copy failed: $!";
+						
 						exit;
 					}
 			
