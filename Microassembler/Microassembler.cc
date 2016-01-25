@@ -290,7 +290,7 @@ void Microassembler::processGraph(Graph_t & g, const string & refname, const str
 				if (g.hasCycle()) { g.clear(false); cycleInGraph = true; break; }
 
 				// skip analysis if there is a perfect or near-perfect repeat in the graph paths			
-				if(g.hasRepeatsInGraphPaths()) { g.clear(false); rptInQry = true; break; }
+				if(g.hasRepeatsInGraphPaths(refinfo)) { g.clear(false); rptInQry = true; break; }
 			
 				// Thread reads
 				// BUG: threding is off because creates problems if the the bubble is not covered (end-to-end) 

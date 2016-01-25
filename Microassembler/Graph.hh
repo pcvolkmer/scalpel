@@ -115,7 +115,7 @@ public:
 	void setInsertStdev(int is) { INSERT_STDEV = is; }
 	void setMaxMismatch(int mm) { MAX_MISMATCH = mm; }
 	
-	bool hasRepeatsInGraphPaths() { return findRepeatsInGraphPaths(source_m, sink_m, F); }
+	bool hasRepeatsInGraphPaths(Ref_t * ref) { return findRepeatsInGraphPaths(source_m, sink_m, F, ref); }
 
 	void clear(bool flag);
 	void loadSequence(int readid, const string & seq, bool isRef, int trim5);
@@ -158,7 +158,7 @@ public:
 	Path_t * bfs(Node_t * source, Node_t * sink, Ori_t dir, Ref_t * ref);
 	void eka(Node_t * source, Node_t * sink, Ori_t dir, Ref_t * ref, FILE * fp, bool printPathsToFile);
 	void dfs(Node_t * source, Node_t * sink, Ori_t dir, Ref_t * ref, FILE * fp, bool printPathsToFile);
-	bool findRepeatsInGraphPaths(Node_t * source, Node_t * sink, Ori_t dir);
+	bool findRepeatsInGraphPaths(Node_t * source, Node_t * sink, Ori_t dir, Ref_t * ref);
 	bool hasCycle();
 	void hasCycleRec(Node_t * node, Ori_t dir, bool* ans);
 	string nodeColor(Node_t * cur, string & who);

@@ -456,9 +456,55 @@ void Graph_t::hasCycleRec(Node_t * node, Ori_t dir, bool *ans) {
 	}
 }
 
+// Edmonds–Karp style algorithm to enumarate the minimum number of 
+// paths (source-to-sink) that cover every edge of the graph
+//////////////////////////////////////////////////////////////
+bool Graph_t::findRepeatsInGraphPaths(Node_t * source, Node_t * sink, Ori_t dir, Ref_t * ref)
+{
+	//if (verbose) { cerr << endl << "looking for near-percfect repeats:"; }
+	if ( (source_m == NULL) || (sink_m == NULL) ) { return false; }
+	
+	//if(verbose) { cerr << endl << "searching from " << source->nodeid_m << " to " << sink->nodeid_m << " dir: " << dir << endl; }
+		
+	int complete = 0;
+	bool answer = false;
+	vector<Edge_t *> edges;
+	
+	while(true) {
+		
+		Path_t * path = bfs(source, sink, dir, ref);
+				
+		if (path == NULL) { break; }
+		
+		complete++;
+		
+		if(isAlmostRepeat(path->str(), K, MAX_MISMATCH)) {
+			answer = true;
+			cerr << "Near-perfect repeat in assembled sequence for kmer " << K << endl;
+			break;
+		}
+		
+		for (unsigned int i = 0; i < path->edges_m.size(); i++) {
+			(path->edges_m[i])->setFlag(1);
+			edges.push_back(path->edges_m[i]);
+		}
+
+		path->reset();
+		delete path;
+	}
+	
+	// clear edge flags for next call to eka graph traversal
+	for (unsigned int i = 0; i < edges.size(); i++) {
+		edges[i]->setFlag(0);
+	}
+	//edges.clear();
+	
+	return answer;
+}
+
 // dfs
 //////////////////////////////////////////////////////////////
-
+/*
 bool Graph_t::findRepeatsInGraphPaths(Node_t * source, Node_t * sink, Ori_t dir)
 {
 	//cerr << "Check for perfect and near perfect repeats in the graph" << endl;
@@ -548,6 +594,7 @@ bool Graph_t::findRepeatsInGraphPaths(Node_t * source, Node_t * sink, Ori_t dir)
 	
 	return answer;
 }
+*/
 
 // processPath
 // align path sequence to reference and parse aligment to extract mutations
