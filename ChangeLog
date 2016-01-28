@@ -3,6 +3,7 @@
 
   * faster graph traversal for finding repeats; 20% to 30% speedup
   * fixed missing sample name in VCF header when no variants to export
+  * fixed error when providing empty BED file
   
 ----------------------------------------------------------
 0.5.2 | Wed August 12 2015
