@@ -276,26 +276,40 @@ sub loadHashes {
 	for my $k (keys %tumorCov) { delete $tumorCov{$k}; }
 	
 	# load databases of mutations
-	print STDERR "load variants for normal...\n";
-	loadDB("$WORK/normal/variants.db", \%normalSVs, \%exons, 0);
-	print STDERR "load variants for tumor...\n";
-	loadDB("$WORK/tumor/variants.db", \%tumorSVs, \%exons, 0);
-	
-	print STDERR "load coverage for normal...\n";
-	loadCov("$WORK/normal/refcov.txt", \%normalCov);
-	print STDERR "load coverage for tumor...\n";
-	loadCov("$WORK/tumor/refcov.txt", \%tumorCov);
-	
-	print STDERR "load loc2key for for normal...\n";
-	loadLoc2Key("$WORK/normal/loc2keys.txt.gz", \%normalL2K);
-	print STDERR "load loc2key for for tumor...\n";
-	loadLoc2Key("$WORK/tumor/loc2keys.txt.gz", \%tumorL2K);
+	if(-e "$WORK/normal/variants.db.dir") {
+		print STDERR "load variants for normal...\n";
+		loadDB("$WORK/normal/variants.db", \%normalSVs, \%exons, 0);
+	}
+	if(-e "$WORK/tumor/variants.db.dir") {
+		print STDERR "load variants for tumor...\n";
+		loadDB("$WORK/tumor/variants.db", \%tumorSVs, \%exons, 0);
+	}
+	if(-e "$WORK/normal/refcov.txt.gz") {
+		print STDERR "load coverage for normal...\n";
+		loadCov("$WORK/normal/refcov.txt", \%normalCov);
+	}
+	if(-e "$WORK/tumor/refcov.txt.gz") {
+		print STDERR "load coverage for tumor...\n";
+		loadCov("$WORK/tumor/refcov.txt", \%tumorCov);
+	}
+	if(-e "$WORK/normal/loc2keys.txt.gz") {
+		print STDERR "load loc2key for for normal...\n";
+		loadLoc2Key("$WORK/normal/loc2keys.txt.gz", \%normalL2K);
+	}
+	if(-e "$WORK/tumor/loc2keys.txt.gz") {
+		print STDERR "load loc2key for for tumor...\n";
+		loadLoc2Key("$WORK/tumor/loc2keys.txt.gz", \%tumorL2K);
+	}
 	
 	#remove reference coverage files:
-	print STDERR "remove coverage file for normal...\n";
-	runCmd("remove coverage file", "rm $WORK/normal/refcov.txt.gz");
-	print STDERR "remove coverage file for tumor...\n";
-	runCmd("remove coverage file", "rm $WORK/tumor/refcov.txt.gz");
+	if(-e "$WORK/normal/refcov.txt.gz") {
+		print STDERR "remove coverage file for normal...\n";
+		runCmd("remove coverage file", "rm $WORK/normal/refcov.txt.gz");
+	}
+	if(-e "$WORK/tumor/refcov.txt.gz") {
+		print STDERR "remove coverage file for tumor...\n";
+		runCmd("remove coverage file", "rm $WORK/tumor/refcov.txt.gz");
+	}
 }
 
 ## call variants on each family memeber
@@ -580,7 +594,7 @@ sub getTotalCov {
 }
 
 
-## find denovo events
+## find somatic events
 #####################################################
 
 sub findSomaticMut {

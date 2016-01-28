@@ -204,6 +204,40 @@ sub run {
 	if (! -r $fdir) { mkdir $fdir; }
 
 	printParams("$fdir/parameters.txt");
+	
+	#--------- link BM files and parse header --------
+	# get absolute path
+	my $bam_abs_path = File::Spec->rel2abs($bamfile);
+	my($file,$dir,$ext) = fileparse($bam_abs_path, qr/\.[^.]*/);
+
+	## link the input files	
+    if (-e $bam_abs_path) { 
+		symlink "$bam_abs_path", "$fdir/bamfile.bam"; 
+	}
+    else { 
+		print STDERR "Can't find bamfile: $bamfile\n";
+		next;
+    }
+
+	my $bai1 = "$dir/$file.bai";
+	my $bai2 = "$dir/$file.bam.bai";
+	
+    if (-e "$bai1") {
+		symlink "$bai1", "$fdir/bamfile.bam.bai";
+    }
+	elsif (-e "$bai2") {
+		symlink "$bai2", "$fdir/bamfile.bam.bai";
+    }
+    else {
+		print STDERR "Indexing BAM file...\n";
+		runCmd("index bamfile", "$bamtools index -in $bam_abs_path");
+		symlink "$bam_abs_path.bai", "$fdir/bamfile.bam.bai";
+    }
+
+	parseHeader($WORK, \%readgroups);
+	saveReadGroup("$sample", $WORK, \%readgroups, $rgfile);
+	
+	#---------------------------------------------------
 		
 	my $cnt = 0;
 	if($selected ne "null") {
@@ -215,7 +249,7 @@ sub run {
 	
 	if ($cnt == 0) {
 		print STDERR "No regions to examine. Nothing to do! exit.\n";
-		exit -1;
+		exit 0;
 	}
 	
 	# decide if loading genome from fasta or use samtools faidx
@@ -247,37 +281,6 @@ sub run {
 	#$variants_dbm_obj->SyncCacheSize('1000M');    # 1000 Megabyte max memory used
 	
 	#print "$bamfile\n";
-	
-	# get absolute path
-	my $bam_abs_path = File::Spec->rel2abs($bamfile);
-	my($file,$dir,$ext) = fileparse($bam_abs_path, qr/\.[^.]*/);
-
-	## link the input files	
-    if (-e $bam_abs_path) { 
-		symlink "$bam_abs_path", "$fdir/bamfile.bam"; 
-	}
-    else { 
-		print STDERR "Can't find bamfile: $bamfile\n";
-		next;
-    }
-
-	my $bai1 = "$dir/$file.bai";
-	my $bai2 = "$dir/$file.bam.bai";
-	
-    if (-e "$bai1") {
-		symlink "$bai1", "$fdir/bamfile.bam.bai";
-    }
-	elsif (-e "$bai2") {
-		symlink "$bai2", "$fdir/bamfile.bam.bai";
-    }
-    else {
-		print STDERR "Indexing BAM file...\n";
-		runCmd("index bamfile", "$bamtools index -in $bam_abs_path");
-		symlink "$bam_abs_path.bai", "$fdir/bamfile.bam.bai";
-    }
-
-	parseHeader($WORK, \%readgroups);
-	saveReadGroup("$sample", $WORK, \%readgroups, $rgfile);
 	
 	print STDERR "Assembly Exons\n";
 	assemblyExons(\%variants, $variants_dbm_obj, \%refcov, \%loc2keys);
