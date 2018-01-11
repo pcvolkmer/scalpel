@@ -79,6 +79,7 @@ OPTIONS:
     --numprocs <int>   : number of parallel jobs (1 for no parallelization) [default 1]
     --sample <string>  : only process reads/fragments in sample [default ALL]
     --coords <file>    : file with list of selected locations to examine [default null]
+	--seed <int>       : seed for random operations [default 0]
 
   Output:
   
@@ -128,6 +129,7 @@ OPTIONS:
     --dir <directory>  : output directory [default ./outdir]
     --numprocs <int>   : number of parallel jobs (1 for no parallelization) [default 1]
     --coords <file>    : file with list of selected coordinates to examine [default null]
+	--seed <int>       : seed for random operations [default 0]
     --two-pass         : perform second pass of analysis to confirm candidate calls
 
   Output:
@@ -176,6 +178,7 @@ OPTIONS:
     --dir <directory>     : output directory [default ./outdir]
     --numprocs <int>      : number of parallel jobs (1 for no parallelization) [default 1]
     --coords <file>       : file with list of selected coordinates to examine [default null]
+	--seed <int>          : seed for random operations [default 0]
     --two-pass            : perform second pass of analysis to confirm candidate calls
 
   Output:
