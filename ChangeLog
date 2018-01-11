@@ -1,3 +1,10 @@
+
+----------------------------------------------------------
+0.5.3 | Thu January 11 2018
+
+  * new parameter to set random seed; results using the same seed should be identical
+  * Contributed by Gilad Mishne: https://gist.github.com/giladmishne/5fe49bcda9b2dac1a652fc125c612832
+  
 ----------------------------------------------------------
 0.5.3 | Mon January 25 2016
 
