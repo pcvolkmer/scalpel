@@ -38,7 +38,7 @@ my %defaults = (
 	pathlimit 			=> 1000000,
 	format				=> "vcf",
 	SVtype				=> "indel",
-	version_num			=> "0.5.3 (beta), January 25 2016",
+	version_num			=> "0.5.4 (beta), January 11 2018",
 	
 	minInsSize			=> 1,
 	maxInsSize			=> 1000000000,
@@ -75,6 +75,8 @@ my %defaults = (
 	max_cov				=> 1000000,
 	min_alt_cnt 		=> 5,
 	max_alt_cnt			=> 1000000,
+
+	rand_seed			=> 0,
 );
 
 #####################################################
@@ -125,6 +127,7 @@ OPTIONS:
     --numprocs <int>   : number of parallel jobs (1 for no parallelization) [default $defaults{MAX_PROCESSES}]
     --sample <string>  : only process reads/fragments in sample [default $defaults{sample}]
     --coords <file>    : file with list of selected locations to examine [default $defaults{selected}]
+    --seed <int>       : seed for random operations [default $defaults{rand_seed}]
 
   Output:
   
@@ -184,6 +187,7 @@ OPTIONS:
     --dir <directory>  : output directory [default $defaults{WORK}]
     --numprocs <int>   : number of parallel jobs (1 for no parallelization) [default $defaults{MAX_PROCESSES}]
     --coords <file>    : file with list of selected coordinates to examine [default $defaults{selected}]
+    --seed <int>       : seed for random operations [default $defaults{rand_seed}]
     --two-pass         : perform second pass of analysis to confirm candidate calls
 
   Output:
@@ -242,6 +246,7 @@ OPTIONS:
     --dir <directory>     : output directory [default $defaults{WORK}]
     --numprocs <int>      : number of parallel jobs (1 for no parallelization) [default $defaults{MAX_PROCESSES}]
     --coords <file>       : file with list of selected coordinates to examine [default $defaults{selected}]
+    --seed <int>          : seed for random operations [default $defaults{rand_seed}]
     --two-pass            : perform second pass of analysis to confirm candidate calls
 
   Output:

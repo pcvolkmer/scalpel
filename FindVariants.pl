@@ -62,6 +62,8 @@ my $MAX_PROCESSES = $defaults->{MAX_PROCESSES};
 my $sample = $defaults->{sample};
 my $selected = $defaults->{selected};
 my $outformat = $defaults->{format};
+my $rand_seed = $defaults->{rand_seed};
+
 my $intarget;
 my $logs;
 
@@ -126,6 +128,7 @@ GetOptions(
     'sample=s'     => \$sample,
     'coords=s'     => \$selected,
     'format=s'     => \$outformat,
+    'seed=i'       => \$rand_seed,
 
 	# ouptut parameters
 	'intarget!'    => \$intarget,
@@ -186,6 +189,7 @@ sub printParams {
 	print PFILE "-- sample: $sample\n";
 	print PFILE "-- output format for variants: $outformat\n";
 	print PFILE "-- file of selected coordinates: $selected\n";
+	print PFILE "-- random seed: $rand_seed\n";
 	if($intarget) { print PFILE "-- output variants in target? yes\n"; }
 	else { print PFILE "-- output variants in target? no\n"; }
 	if($logs) { print PFILE "-- keep log files? yes\n"; }
@@ -450,7 +454,7 @@ sub schedule_jobs {
 	
 	# random permutation of the regions to assemble
 	#my @regions = random_permutation(@$array);
-    fisher_yates_shuffle( $array );
+        fisher_yates_shuffle( $array, $rand_seed );
 	my @regions = @$array;
 	my $arraySize = $#regions + 1;
 

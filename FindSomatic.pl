@@ -63,6 +63,7 @@ my $MAX_PROCESSES = $defaults->{MAX_PROCESSES};
 my $selected = $defaults->{selected};
 my $dfs_limit = $defaults->{pathlimit};
 my $outformat = $defaults->{format};
+my $rand_seed = $defaults->{rand_seed};
 my $maxNormalContamination = $defaults->{contaminant_fraction_normal};
 my $intarget;
 my $logs;
@@ -130,6 +131,7 @@ GetOptions(
     'numprocs=i'   => \$MAX_PROCESSES,
     'coords=s'     => \$selected,
     'format=s'     => \$outformat,
+    'seed=i'       => \$rand_seed,
     #'normalContamination=f' => \$maxNormalContamination,
 
 	# ouptut parameters
@@ -206,6 +208,7 @@ sub printParams {
 	print PFILE "-- reference file: $REF\n";
 	print PFILE "-- file of selected locations: $selected\n";
 	print PFILE "-- output format for variants: $outformat\n";
+	print PFILE "-- random seed: $rand_seed\n";
 	if($intarget) { print PFILE "-- output variants in target? yes\n"; }
 	else { print PFILE "-- output variants in target? no\n"; }
 	if($logs) { print PFILE "-- keep log files? yes\n"; }
@@ -345,6 +348,7 @@ sub callSVs {
 		"--numprocs $MAX_PROCESSES ".
 		"--coords $selected ".
 		"--format $outformat ".
+		"--seed $rand_seed ".		
 		"--cov2file";
 	if($intarget) { $command .= " --intarget"; }	
 	if($logs) { $command .= " --logs"; }	

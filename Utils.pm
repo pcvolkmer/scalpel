@@ -311,6 +311,8 @@ sub genotype {
 
 sub fisher_yates_shuffle {
     my $array = shift;
+    my $seed = shift;
+    srand($seed);
     my $i;
     for ($i = @$array; --$i; ) {
         my $j = int rand ($i+1);

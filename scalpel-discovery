@@ -67,6 +67,7 @@ my $sample = $defaults->{sample};
 my $selected = $defaults->{selected};
 my $dfs_limit = $defaults->{pathlimit};
 my $normalContaminationFraction = $defaults->{contaminant_fraction_normal};
+my $rand_seed = $defaults->{rand_seed};
 
 # output arguments
 my $intarget;
@@ -177,6 +178,7 @@ GetOptions(
 	'intarget!'    => \$intarget,
 	'logs!'   	   => \$logs,
 	'two-pass!'    => \$twopass,
+	'seed=i'       => \$rand_seed,
 
 ) or usage();
 
@@ -239,6 +241,7 @@ sub init()
 					"--dir $ABS_WORK ".
 					"--numprocs $MAX_PROCESSES ".
 					"--format $outformat ".
+					"--seed $rand_seed ".
 					"--coords $selected";
 				if($VERBOSE) { $command .= " --verbose"; }
 				if($intarget) { $command .= " --intarget"; }
@@ -291,6 +294,7 @@ sub init()
 					"--dir $DIR_main ".
 					"--numprocs $MAX_PROCESSES ".
 					"--format $outformat ".
+					"--seed $rand_seed ".
 					"--coords $selected";
 				if($VERBOSE) { $command_main .= " --verbose"; }
 				if($intarget) { $command_main .= " --intarget"; }
@@ -359,6 +363,7 @@ sub init()
 						"--dir $DIR_val ".
 						"--numprocs $MAX_PROCESSES ".
 						"--format $outformat ".
+						"--seed $rand_seed ".
 						"--coords $outfile";
 					if($VERBOSE) { $command_val .= " --verbose"; }
 					if($intarget) { $command_val .= " --intarget"; }
@@ -421,6 +426,7 @@ sub init()
 					"--dir $DIR_main ".
 					"--numprocs $MAX_PROCESSES ".
 					"--format $outformat ".
+					"--seed $rand_seed ".
 					"--coords $selected";
 				if($VERBOSE) { $command_main .= " --verbose"; }
 				if($intarget) { $command_main .= " --intarget"; }
@@ -491,6 +497,7 @@ sub init()
 						"--dir $DIR_val ".
 						"--numprocs $MAX_PROCESSES ".
 						"--format $outformat ".
+						"--seed $rand_seed ".
 						"--coords $outfile";
 					if($VERBOSE) { $command_val .= " --verbose"; }	
 					if($intarget) { $command_val .= " --intarget"; }
