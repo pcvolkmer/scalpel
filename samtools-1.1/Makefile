@@ -37,7 +37,7 @@ AOBJS=      bam_index.o bam_plcmd.o sam_view.o \
             faidx.o stats.o stats_isize.o bam_flags.o bam_split.o \
             bam_tview.o bam_tview_curses.o bam_tview_html.o bam_lpileup.o
 INCLUDES=   -I. -I$(HTSDIR)
-LIBCURSES=  -lcurses # -lXCurses
+LIBCURSES=  -lncurses # was: -lcurses, alternative: -lXCurses
 
 prefix      = /usr/local
 exec_prefix = $(prefix)
