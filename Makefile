@@ -1,4 +1,4 @@
-BAMTOOLS_DIR := ./bamtools-2.3.0/
+BAMTOOLS_DIR := ./bamtools/
 ABS_BAMTOOLS_DIR := $(realpath $(BAMTOOLS_DIR))
 SAMTOOLS_DIR := ./samtools-1.1/
 ABS_SAMTOOLS_DIR := $(realpath $(SAMTOOLS_DIR))
