@@ -4,8 +4,8 @@ package Utils;
 # Utils
 #
 # Package with basic commons routines
-# 
-#  Author: Giuseppe Narzisi 
+#
+#  Author: Giuseppe Narzisi
 #    Date: December 11, 2013
 #
 ###################################################################
@@ -27,30 +27,30 @@ our $findDenovos  = "$Bin/FindDenovos.pl";
 our $findSomatic  = "$Bin/FindSomatic.pl";
 #our $exportTool   = "$Bin/ExportVariants.pl";
 our $exportTool   = "$Bin/scalpel-export";
-our $bamtools     = "$Bin/bamtools-2.3.0/bin/bamtools";
+our $bamtools     = "$Bin/bamtools/bin/bamtools";
 our $samtools     = "$Bin/samtools-1.1/samtools";
 our $bcftools     = "$Bin/bcftools-1.1/bcftools";
 
-# Run system command 
+# Run system command
 #####################################################
 
-sub runCmd 
-{ 
+sub runCmd
+{
 	my $info = $_[0];
 	my $cmd  = $_[1];
 	#my $VERBOSE = $_[2];
-	
+
 	my $retval = 0;
 
 	#print STDERR "$info ($cmd)...\n" if $VERBOSE;
 
-	my $rc = system($cmd); 
-	#die "failed ($rc)\n" if $rc; 
-	if ($rc) { 
+	my $rc = system($cmd);
+	#die "failed ($rc)\n" if $rc;
+	if ($rc) {
 		print STDERR "Command failure: $info ($cmd)...\n";
-		
+
 		$retval = -1;
-		
+
 		if ($? == -1) {
 			print "failed to execute: $!\n";
 		}
@@ -60,7 +60,7 @@ sub runCmd
 		}
 		else {
 			printf "child exited with value %d\n", $? >> 8;
-		}	
+		}
 	}
 	return $retval;
 }
@@ -74,7 +74,7 @@ sub leftNormalize {
 	my $REF = $_[2];
 	my $FAIDX = $_[3];
 	my $genome = $_[4];
-	
+
 	my $pos = $indel->{pos};
 	my $type = $indel->{type};
 	my $chr = $indel->{chr};
@@ -84,7 +84,7 @@ sub leftNormalize {
 	#pos = $pos+1; # convert from 0-based to 1-based coordinate system
 	my $l = $pos-$indel_len-$delta;
  	my $r = $pos+$indel_len+$delta;
-		
+
 	my $reference = "";
 	if ($FAIDX == 0) {
 		$reference = substr($genome->{$chr}->{seq}, $l-1, $r-$l+1);
@@ -103,7 +103,7 @@ sub leftNormalize {
 		my $true_indel_seq = $left_seq . $right_seq;
 		$new_pos = $l+$p;
 		$indel->{ref} = substr($reference, $p, $indel_len);
-		
+
 		## reposition the candidate variant to a canonical (leftmost) position
 		my $left_hyplotype;
 		my $right_hyplotype;
@@ -121,13 +121,13 @@ sub leftNormalize {
 		  		$indel->{ref} = substr($reference, $i, $indel_len);
 		  	}
 		}
-		
+
 		if($new_pos != $pos) {
 			#$num_indels_repositioned++;
 			my $shift = $pos - $new_pos + 1;
 			#print STDERR "Deletion ($chr:$pos) left-shifted of $shift bp\n";
-		}	
-		
+		}
+
 		$indel->{seq} = ('-' x $indel_len);
 		$indel->{pos} = $new_pos;
 		#$indel->{end} = $indel->{start} + $indel->{len} - 1;
@@ -137,7 +137,7 @@ sub leftNormalize {
 		my $right_seq = substr($reference, $p);
 		my $true_indel_seq = $left_seq . $indel->{seq} . $right_seq;
 		$new_pos = $l+$p;
-		
+
 		## reposition the candidate variant to a canonical (leftmost) position
 		my $left_hyplotype;
 		my $right_hyplotype;
@@ -149,7 +149,7 @@ sub leftNormalize {
 		  	$right_hyplotype = substr($reference, $i);
 		  	$ins = substr($true_indel_seq, $i, $indel_len);
 		  	$new_indel_seq = $left_hyplotype . $ins . $right_hyplotype;
-				
+
 		  	#print "$true_indel_seq";
 		    #print "$new_indel_seq";
 		  	if ($true_indel_seq eq $new_indel_seq) {
@@ -158,13 +158,13 @@ sub leftNormalize {
 		  		$indel->{seq} = $ins;
 		  	}
 		}
-		
+
 		if($new_pos != $pos) {
 			#$num_indels_repositioned++;
 			my $shift = $pos - $new_pos + 1;
 			#print STDERR "Insertion ($chr:$pos) left-shifted of $shift bp\n";
 		}
-		
+
 		$indel->{ref} = ('-' x $indel_len);
 		$indel->{pos} = $new_pos;
 		#$indel->{end} = $indel->{start};
@@ -182,18 +182,18 @@ sub uniq {
 ##########################################
 sub binarySearch {
 
-	my $x = $_[0];	
+	my $x = $_[0];
 	my $A = $_[1];
 	my $l = $_[2];
 	my $r = $_[3];
-	
+
 	while($l<=$r) {
 		my $m = floor( ($l+$r)/2 );
 		my $f = @$A[$m];
 		if($f->{end} < $x) { $l = $m+1; }
 		elsif($f->{start} > $x)  { $r = $m-1; }
-		else { 
-			return $m; 
+		else {
+			return $m;
 		}
 	}
 	return -1;
@@ -206,31 +206,31 @@ sub binarySearch {
 sub inTarget {
 	my $mutation = $_[0];
 	my $exons = $_[1];
-	
+
 	my $chr = $mutation->{chr};
 	my $pos = $mutation->{pos};
 	my $len = $mutation->{len};
-	
+
 	my $result = "false";
-	
+
 	my @array = @{$exons->{$chr}};
-	
+
 	my $flag1 = binarySearch($pos, \@array, 0, (scalar @array)-1);
 	my $flag2 = binarySearch($pos+$len, \@array, 0, (scalar @array)-1);
-	
+
 	if( ($flag1 != -1) || ($flag2 != -1) ) { $result = "true"; }
-	
+
 	#foreach my $exon (@{$exons->{$chr}}) {
-		
+
 	#	my $s = $exon->{start};
 	#	my $e = $exon->{end};
-		
-	#	if( ($s <= $pos) && ($pos <= $e) ) { 
-	#		$result = "true"; 
+
+	#	if( ($s <= $pos) && ($pos <= $e) ) {
+	#		$result = "true";
 	#		last;
 	#	}
 	#}
-	
+
 	return $result;
 }
 
@@ -250,7 +250,7 @@ sub bychrpos {
 	return $result;
 }
 
-# print total time elapsed 
+# print total time elapsed
 ##########################################
 
 sub elapsedTime {
@@ -258,7 +258,7 @@ sub elapsedTime {
 	my $tool = $_[1];
 
 	my $hours = $time_taken / 3600;
-	my $days = $hours / 24; 
+	my $days = $hours / 24;
 	$hours = $hours % 24;
 	my $seconds = $time_taken % 3600;
 	my $minutes = $seconds / 60;
@@ -288,14 +288,14 @@ sub genotype {
 	my $O = $_[2]; # other coverage (>0 for multiple alleles)
 	my $Z = $_[3]; # zygosity (het/hom)
 	my $GT = $_[4]; # GT field on VCF format
-	
+
 	if($R>0) {
 		if($A>0 && $O==0) { $Z = "het"; $GT = "0/1"; }
 		elsif($A>0 && $O>0) { $Z = "het"; $GT = "0/1"; }
 		elsif($A==0 && $O==0) { $Z = "hom"; $GT = "0/0"; }
 		elsif($A==0 && $O>0) { $Z = "hom"; $GT = "0/0"; }
 	}
-	elsif($R==0) { 
+	elsif($R==0) {
 		if($A>0 && $O==0) { $Z = "het"; $GT = "1/1"; }
 		elsif($A>0 && $O>0) { $Z = "het"; $GT = "1/1"; }
 		elsif($A==0 && $O==0) { $Z = "hom"; $GT = "."; }
@@ -305,7 +305,7 @@ sub genotype {
 }
 
 
-# fisher_yates_shuffle( \@array ) : 
+# fisher_yates_shuffle( \@array ) :
 # generate a random permutation of @array in place
 ##########################################
 
